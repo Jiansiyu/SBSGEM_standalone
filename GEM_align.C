@@ -15,6 +15,8 @@
 #include "TMinuit.h"
 #include "TMath.h"
 
+using namespace std;
+
 double PI = TMath::Pi();
 
 int nlayers=4;
