@@ -1517,6 +1517,7 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 
 void GEM_reconstruct( const char *filename, const char *configfilename, const char *outfilename="temp.root" ){
 
+  // ? what this used for
   //Initialize walk correction parameters:
   double walkcor_mean_params[3] = {walkcor_mean_const, walkcor_mean_ADC0, walkcor_mean_exp};
   double walkcor_sigma_params[3] = {walkcor_sigma_const, walkcor_sigma_ADC0, walkcor_mean_exp};
@@ -1561,6 +1562,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	if( ntokens >= 2 ){
 	  TString skey = ( (TObjString*) (*tokens)[0] )->GetString();
 
+	  //did not find in the configure file
 	  if( skey == "NMAX" ){
 	    TString stemp = ( (TObjString*) (*tokens)[1] )->GetString();
 	    NMAX = stemp.Atoi();
@@ -1623,7 +1625,10 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	      mod_az[i-1] = smodaz.Atof();
 	    }
 	  }
+	  // end load the layout of the GEMs
 
+
+	  // take the layer ID from the config file
 	  if( skey == "mod_layer" && ntokens >= nmodules + 1 ){
 	    for( int i=1; i<ntokens; i++ ){
 	      TString smodlayer = ( (TObjString*) (*tokens)[i] )->GetString();
@@ -2278,6 +2283,8 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
     mod_Rotinv[imodule] = Rtemp.Inverse();
   }
   
+  //check the branch in order to check whether the root contains the branch
+
   while( T->GetEntry(nevent++) && (NMAX < 0 || nevent < NMAX ) ){
     if( nevent % 1000 == 0 ) cout << nevent << endl;
 
@@ -2352,8 +2359,11 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       
       layers_hit.insert(layer);
       
-      //Need to change in order to make it work
-      int ADCsamples[6];
+      //TODO Need to change in order to make it work
+      //
+
+
+      int ADCsamples[nADCsamples];
       ADCsamples[0] = (T->adc0)[ich];
       ADCsamples[1] = (T->adc1)[ich];
       ADCsamples[2] = (T->adc2)[ich];
@@ -2361,20 +2371,24 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       ADCsamples[4] = (T->adc4)[ich];
       ADCsamples[5] = (T->adc5)[ich];
 
+
+
       bool keepstrip=false;
       double maxsamp=0.0,sumsamp=0.0;
 
       int isamp_max = -1;
       
-      for( int isamp=0; isamp<6; isamp++ ){
-	sumsamp += ADCsamples[isamp];
-	//maxsamp = (ADCsamples[isamp] > maxsamp ) ? ADCsamples[isamp] : maxsamp;
-	if( isamp_max < 0 || ADCsamples[isamp] > maxsamp ){
-	  maxsamp = ADCsamples[isamp];
-	  isamp_max = isamp;
-	}
-      }
+      for (int isamp = 0; isamp < nADCsamples; isamp++) {
+				sumsamp += ADCsamples[isamp];
+				//maxsamp = (ADCsamples[isamp] > maxsamp ) ? ADCsamples[isamp] : maxsamp;
+				if (isamp_max < 0 || ADCsamples[isamp] > maxsamp) {
+					maxsamp = ADCsamples[isamp];
+					isamp_max = isamp;
+				}
+			}
 
+      // cut on the sum ADC and the maximum strip ADC
+      //TODO need to check whether this reasonable,
       if( maxsamp >= thresh_maxsample && sumsamp >= thresh_stripsum ) keepstrip = true;
       
       double tsum = 0.0;
@@ -2385,81 +2399,100 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
       double tcorr;
       
-      if( plane == mod_uplaneID[module] && keepstrip ){ //x (vertical/long) axis
-	//mod_xstrips_hit[module].insert( strip );
+      if (plane == mod_uplaneID[module] && keepstrip) { //x (vertical/long) axis
+				//mod_xstrips_hit[module].insert( strip );
 
-	ModData[module].xstrips.insert( strip );
-	ModData[module].ADCsum_xstrips[strip] = 0.0;
-	ModData[module].ADCsamp_xstrips[strip].resize(6);
-	
-	// ADCsum_xstrips[module][strip] = 0.0;
-	// ADCsamp_xstrips[module][strip].resize(6);
-	for( int isamp=0; isamp<6; isamp++ ){
+				ModData[module].xstrips.insert(strip);
+				ModData[module].ADCsum_xstrips[strip] = 0.0;
+				ModData[module].ADCsamp_xstrips[strip].resize(6);
 
-	  ModData[module].ADCsamp_xstrips[strip][isamp] = ADCsamples[isamp];
-	  ModData[module].ADCsum_xstrips[strip] += ADCsamples[isamp];
-	  
-	  // ADCsamp_xstrips[module][strip][isamp] = ADCsamples[isamp];
-	  // ADCsum_xstrips[module][strip] += ADCsamples[isamp];
+				// ADCsum_xstrips[module][strip] = 0.0;
+				// ADCsamp_xstrips[module][strip].resize(6);
+				for (int isamp = 0; isamp < nADCsamples; isamp++) {
 
-	  hADCvsSampleAllStrips->Fill( isamp, ADCsamples[isamp] );
-	  double tsample = 12.5+25.0*isamp;
+					ModData[module].ADCsamp_xstrips[strip][isamp] =
+							ADCsamples[isamp];
+					ModData[module].ADCsum_xstrips[strip] += ADCsamples[isamp];
 
-	  tsum += ADCsamples[isamp]*tsample;
-	  tsum2 += ADCsamples[isamp]*pow(tsample,2);
+					// ADCsamp_xstrips[module][strip][isamp] = ADCsamples[isamp];
+					// ADCsum_xstrips[module][strip] += ADCsamples[isamp];
 
-	  if( isamp == 0 || ADCsamples[isamp] > ModData[module].ADCmax_xstrips[strip] ){
-	    //    ADCmax_xstrips[module][strip] = ADCsamples[isamp];
+					hADCvsSampleAllStrips->Fill(isamp, ADCsamples[isamp]);
 
-	    ModData[module].ADCmax_xstrips[strip] = ADCsamples[isamp];
-	    ModData[module].isampmax_xstrips[strip] = isamp;
-	  }
-	}
+					// it seems like this is construct the hit time
+					double tsample = 12.5 + 25.0 * isamp;
 
-	tmean = tsum/ModData[module].ADCsum_xstrips[strip];
-	tsigma = sqrt(fabs(tsum2/ModData[module].ADCsum_xstrips[strip]-pow(tmean,2)));
-	
-	tcorr = tmean - walkcor_mean_func->Eval( ModData[module].ADCsum_xstrips[strip] );
-	
-	ModData[module].Tmean_xstrips[strip] = tmean;
-	ModData[module].Tsigma_xstrips[strip] = tsigma;
+					tsum += ADCsamples[isamp] * tsample;
+					tsum2 += ADCsamples[isamp] * pow(tsample, 2);
 
-	ModData[module].Tmean_xstrips_walkcor[strip] = tcorr;
-	ModData[module].Tsigma_xstrips_walkcor[strip] = walkcor_sigma_func->Eval( ModData[module].ADCsum_xstrips[strip] );
-	
-	hADCsumAllStrips->Fill( ModData[module].ADCsum_xstrips[strip] );
+					if (isamp == 0
+							|| ADCsamples[isamp]
+									> ModData[module].ADCmax_xstrips[strip]) {
+						//    ADCmax_xstrips[module][strip] = ADCsamples[isamp];
 
-	layers_hitX.insert(layer);
+						ModData[module].ADCmax_xstrips[strip] =
+								ADCsamples[isamp];
+						ModData[module].isampmax_xstrips[strip] = isamp;
+					}
+				}
 
-	NstripX_layer[layer] += 1;
+				tmean = tsum / ModData[module].ADCsum_xstrips[strip];
+				tsigma = sqrt(
+						fabs(
+								tsum2 / ModData[module].ADCsum_xstrips[strip]
+										- pow(tmean, 2)));
 
-	if( mod_maxstripX.find( module ) == mod_maxstripX.end() || ModData[module].ADCsum_xstrips[strip] > mod_ADCmaxX[module] ){
-	  mod_ADCmaxX[module] = ModData[module].ADCsum_xstrips[strip];
-	  mod_maxstripX[module] = strip;
-	}
-	
-      } else if( plane == mod_vplaneID[module] && keepstrip ){ //y (horizontal/short) axis
-	ModData[module].ystrips.insert( strip );
+				tcorr = tmean
+						- walkcor_mean_func->Eval(
+								ModData[module].ADCsum_xstrips[strip]);
 
-	ModData[module].ADCsum_ystrips[strip] = 0.0;
-	ModData[module].ADCsamp_ystrips[strip].resize(6);
-	for( int isamp=0; isamp<6; isamp++ ){
-	  ModData[module].ADCsamp_ystrips[strip][isamp] = ADCsamples[isamp];
-	  ModData[module].ADCsum_ystrips[strip] += ADCsamples[isamp];
+				ModData[module].Tmean_xstrips[strip] = tmean;
+				ModData[module].Tsigma_xstrips[strip] = tsigma;
 
-	  hADCvsSampleAllStrips->Fill( isamp, ADCsamples[isamp] );
+				ModData[module].Tmean_xstrips_walkcor[strip] = tcorr;
+				ModData[module].Tsigma_xstrips_walkcor[strip] =
+						walkcor_sigma_func->Eval(
+								ModData[module].ADCsum_xstrips[strip]);
 
-	  double tsample = 12.5+25.0*isamp;
-	  
-	  tsum += ADCsamples[isamp]*tsample;
-	  tsum2 += ADCsamples[isamp]*pow(tsample,2);
+				hADCsumAllStrips->Fill(ModData[module].ADCsum_xstrips[strip]);
 
-	  if( isamp == 0 || ADCsamples[isamp] > ModData[module].ADCmax_ystrips[strip] ){
-	    ModData[module].ADCmax_ystrips[strip] = ADCsamples[isamp];
-	    ModData[module].isampmax_ystrips[strip] = isamp;
-	  }
-	  
-	}
+				layers_hitX.insert(layer);
+
+				NstripX_layer[layer] += 1;
+
+				if (mod_maxstripX.find(module) == mod_maxstripX.end()
+						|| ModData[module].ADCsum_xstrips[strip]
+								> mod_ADCmaxX[module]) {
+					mod_ADCmaxX[module] = ModData[module].ADCsum_xstrips[strip];
+					mod_maxstripX[module] = strip;
+				}
+
+			} else if (plane == mod_vplaneID[module] && keepstrip) { //y (horizontal/short) axis
+				ModData[module].ystrips.insert(strip);
+
+				ModData[module].ADCsum_ystrips[strip] = 0.0;
+				ModData[module].ADCsamp_ystrips[strip].resize(6);
+				for (int isamp = 0; isamp < nADCsamples; isamp++) {
+					ModData[module].ADCsamp_ystrips[strip][isamp] =
+							ADCsamples[isamp];
+					ModData[module].ADCsum_ystrips[strip] += ADCsamples[isamp];
+
+					hADCvsSampleAllStrips->Fill(isamp, ADCsamples[isamp]);
+
+					double tsample = 12.5 + 25.0 * isamp;
+
+					tsum += ADCsamples[isamp] * tsample;
+					tsum2 += ADCsamples[isamp] * pow(tsample, 2);
+
+					if (isamp == 0
+							|| ADCsamples[isamp]
+									> ModData[module].ADCmax_ystrips[strip]) {
+						ModData[module].ADCmax_ystrips[strip] =
+								ADCsamples[isamp];
+						ModData[module].isampmax_ystrips[strip] = isamp;
+					}
+
+				}
 
 	tmean = tsum/ModData[module].ADCsum_ystrips[strip];
 	tsigma = sqrt(fabs(tsum2/ModData[module].ADCsum_ystrips[strip]-pow(tmean,2)));
@@ -2528,29 +2561,6 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       for(set<int>::iterator imod=modules_hit.begin(); imod != modules_hit.end(); ++imod ){
 	//moduledata_t datatemp;
 	clusterdata_t clusttemp;
-
-	// ModData[*imod].modindex = *imod;
-	// datatemp.modindex = *imod;
-	// datatemp.layerindex = mod_layer[*imod];
-	
-	// datatemp.xstrips = mod_xstrips_hit[*imod];
-	// datatemp.ystrips = mod_ystrips_hit[*imod];
-	// datatemp.ADCsum_xstrips = ADCsum_xstrips[*imod];
-	// datatemp.ADCsum_ystrips = ADCsum_ystrips[*imod];
-	// datatemp.ADCsamp_xstrips = ADCsamp_xstrips[*imod];
-	// datatemp.ADCsamp_ystrips = ADCsamp_ystrips[*imod];
-	// datatemp.ADCmax_xstrips = ADCmax_xstrips[*imod];
-	// datatemp.ADCmax_ystrips = ADCmax_ystrips[*imod];
-	// datatemp.isampmax_xstrips = isampmax_xstrips[*imod];
-	// datatemp.isampmax_ystrips = isampmax_ystrips[*imod];
-	// datatemp.Tmean_xstrips = Tmean_xstrips[*imod];
-	// datatemp.Tsigma_xstrips = Tsigma_xstrips[*imod];
-	// datatemp.Tmean_ystrips = Tmean_ystrips[*imod];
-	// datatemp.Tsigma_ystrips = Tsigma_ystrips[*imod];
-	// datatemp.Tmean_xstrips_walkcor = Tmean_xstrips_walkcor[*imod];
-	// datatemp.Tsigma_xstrips_walkcor = Tsigma_xstrips_walkcor[*imod];
-	// datatemp.Tmean_ystrips_walkcor = Tmean_ystrips_walkcor[*imod];
-	// datatemp.Tsigma_ystrips_walkcor = Tsigma_ystrips_walkcor[*imod];
 	
 	//for( map<int,int>::iterator jmod=mod_maxstripX.begin(); jmod!=mod_maxstripX.end(); ++jmod ){
 	int module = *imod;
@@ -2561,7 +2571,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	int strip = mod_maxstripX[module];
 	if( fabs( ModData[module].Tmean_xstrips[strip] - 64.3 ) <= 2.5*16.3 &&
 	    fabs( ModData[module].Tsigma_xstrips[strip] -36.25) <= 2.5*5.7 ){
-	  for( int isamp=0; isamp<6; isamp++ ){
+	  for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	    
 	    hADCvsSampleMaxStrip->Fill( isamp, ModData[module].ADCsamp_xstrips[strip][isamp] );
 	  }
@@ -2573,7 +2583,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	//int strip = imod->second;
 	if( fabs( ModData[module].Tmean_ystrips[strip] - 64.3 ) <= 2.5*16.3 &&
 	    fabs( ModData[module].Tsigma_ystrips[strip] -36.25) <= 2.5*5.7 ){
-	  for( int isamp=0; isamp<6; isamp++ ){
+	  for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	    hADCvsSampleMaxStrip->Fill( isamp, ModData[module].ADCsamp_ystrips[strip][isamp] );
 	  }
 	}
@@ -2607,78 +2617,6 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	}
 
 	hNclustX_vs_NclustY->Fill( clusttemp.nclusty, clusttemp.nclustx );
-
-	//	hNhitX_vs_NhitY->Fill( clusttemp.nhity1D, clusttemp.nhitx1D );
-	
-	// for( int ihitx=0; ihitx<clusttemp.nhitx1D; ihitx++ ){
-	//   if( clusttemp.nstripx[clusttemp.clustidx_xhit[ihitx]]>2 ){
-	//     hHitAxfit->Fill( clusttemp.Axhit1D[ihitx] );
-	//     hHitXChi2NDF->Fill( clusttemp.chi2ndf_hitx1D[ihitx] );
-
-	//     if( clusttemp.Axhit1D[ihitx] < 2200.0 ){
-	//       hHitTX0fit->Fill( clusttemp.tx0hit1D[ihitx] );
-	   
-	//       //if( clusttemp.nstripx[clusttemp.clustidx_xhit[ihitx]] > 1 )
-	//       hHitXTaufit->Fill( clusttemp.taux0hit1D[ihitx] );
-	//       hHitXSigmaXfit->Fill( clusttemp.sigx0hit1D[ihitx] );
-	//     }
-	//   }
-	// }
-	
-	// for( int ihity=0; ihity<clusttemp.nhity1D; ihity++ ){
-	//   if( clusttemp.nstripy[clusttemp.clustidx_yhit[ihity]] > 2 ){
-	//     hHitYChi2NDF->Fill( clusttemp.chi2ndf_hity1D[ihity] );
-	//     hHitAyfit->Fill( clusttemp.Ayhit1D[ihity] );
-	    
-	//     if( clusttemp.Ayhit1D[ihity] < 2200.0 ){ //cut out "saturation" events from these hits:
-	//       hHitTY0fit->Fill( clusttemp.ty0hit1D[ihity] );	      
-	//       hHitYSigmaYfit->Fill( clusttemp.sigy0hit1D[ihity] );
-	//       hHitYTaufit->Fill( clusttemp.tauy0hit1D[ihity] );
-	//     }
-	//   }
-	// }
-
-	//	for( int ihit2D=0; ihit2D<clusttemp.nhit2D; ihit2D++ ){
-	// for( int ihit2D=0; ihit2D<TMath::Min(1,clusttemp.nhit2D); ihit2D++ ){
-
-	//   if( clusttemp.nstripx[clusttemp.clustidx_xhit[clusttemp.ixhit2D[ihit2D]]] > 2 &&
-	//       clusttemp.nstripy[clusttemp.clustidx_yhit[clusttemp.iyhit2D[ihit2D]]] > 2 ){
-	  
-	//     hHit2D_ADCXvsY->Fill( clusttemp.Axhit1D[clusttemp.ixhit2D[ihit2D]],
-	// 			  clusttemp.Ayhit1D[clusttemp.iyhit2D[ihit2D]] );
-	//     hHit2D_T0XvsY->Fill( clusttemp.tx0hit1D[clusttemp.ixhit2D[ihit2D]],
-	// 			 clusttemp.ty0hit1D[clusttemp.iyhit2D[ihit2D]] );
-	    
-	//     hHit2D_ADCdiff->Fill( clusttemp.dAhit2D[ihit2D] );
-	//     hHit2D_T0diff->Fill( clusttemp.dthit2D[ihit2D] );
-	    
-	//     hHit2D_Chi2Match->Fill( clusttemp.chi2match2D[ihit2D] );
-	    
-	//     hHit2D_ADCasym->Fill( clusttemp.dAhit2D[ihit2D]/(2.*clusttemp.Ahit2D[ihit2D]) );
-	//   }
-	// }
-
-	//cout << "nclust2D = " << clusttemp.nclust2D << endl;
-	
-	// for( int iclust2D=0; iclust2D<clusttemp.nclust2D; iclust2D++ ){
-	//   //if( clusttemp.nstripx2D[iclust2D]>1&&clusttemp.nstripy2D[iclust2D]>1 ){
-	//   if( clusttemp.itrack_clust2D[iclust2D] >= 0 ){ //only fill this information if the cluster is on a found track:
-	//     hClust2D_ADCXvsY->Fill( clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]],
-	// 			    clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]] );
-	//     hClust2D_T0XvsY->Fill( clusttemp.txmean[clusttemp.ixclust2D[iclust2D]],
-	// 			   clusttemp.tymean[clusttemp.iyclust2D[iclust2D]] );
-	//     hClust2D_ADCdiff->Fill( clusttemp.dEclust2D[iclust2D] );
-	//     hClust2D_Tdiff->Fill( clusttemp.dtclust2D[iclust2D] );
-	//     hClust2D_ADCasym->Fill( clusttemp.dEclust2D[iclust2D]/(2.0*clusttemp.Eclust2D[iclust2D]) );
-	//     hClust2D_ADCasym_vs_ADCavg->Fill( clusttemp.Eclust2D[iclust2D], clusttemp.dEclust2D[iclust2D]/(2.0*clusttemp.Eclust2D[iclust2D]) );
-	//     hClust2D_ADCdiff_vs_ADCavg->Fill( clusttemp.Eclust2D[iclust2D], clusttemp.dEclust2D[iclust2D] );
-	  
-	//     hStrip_maxcor->Fill( clusttemp.CorrCoeff2D[iclust2D] );
-
-	//     hClust2D_NstripXvsNstripY->Fill( clusttemp.nstripy2D, clusttemp.nstripx2D );
-	//   }
-	//   //}
-	// }
       }
 
       int nlayers_with_2Dclust = 0;
