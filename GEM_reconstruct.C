@@ -50,6 +50,7 @@ int nstripsy = 1024;
 int nmodules = 12;
 int nlayers  = 4;
 int nADCsamples = 6;
+int minLayerTrack=5;   // minimum layers fired per track
 
 double strip_pitch = 0.4; //mm
 
@@ -301,43 +302,49 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
       int iystrip=*iy;
 
       if( mod_data.Bestmatch_ystrips.find(iystrip) == mod_data.Bestmatch_ystrips.end() ){ //first time considering this y strip
-	mod_data.Bestmatch_ystrips[iystrip] = -1;
-	mod_data.BestCor_ystrips[iystrip] = -1.1;
+				// need to check whether this is a good cut for 3 time sample
+				mod_data.Bestmatch_ystrips[iystrip] = -1;
+				mod_data.BestCor_ystrips[iystrip] = -1.1;
       }
       
       double sumx=0.0, sumy=0.0, sumx2=0.0, sumy2=0.0, sumxy=0.0;
 
-      for( int isamp=0; isamp<6; isamp++ ){
-	double ADCx = mod_data.ADCsamp_xstrips[ixstrip][isamp];
-	double ADCy = mod_data.ADCsamp_ystrips[iystrip][isamp];
+      for( int isamp=0; isamp<nADCsamples; isamp++ ){
+				double ADCx = mod_data.ADCsamp_xstrips[ixstrip][isamp];
+				double ADCy = mod_data.ADCsamp_ystrips[iystrip][isamp];
 	
-	sumx += ADCx;
-	sumy += ADCy;
-	sumx2 += pow(ADCx,2);
-	sumy2 += pow(ADCy,2);
-	sumxy += ADCx*ADCy;
+				sumx += ADCx;
+				sumy += ADCy;
+				sumx2 += pow(ADCx,2);
+				sumy2 += pow(ADCy,2);
+				sumxy += ADCx*ADCy;
       }
 
-      double mux = sumx/6.0;
-      double muy = sumy/6.0;
-      double varx = sumx2/6.0-pow(mux,2);
-      double vary = sumy2/6.0-pow(muy,2);
+			// pearson corrolated coefficiency
+	double ntsample=(double) nADCsamples;
+      double mux = sumx/ntsample;
+      double muy = sumy/ntsample;
+      double varx = sumx2/ntsample-pow(mux,2);
+      double vary = sumy2/ntsample-pow(muy,2);
       double sigx = sqrt(varx);
       double sigy = sqrt(vary);
 
-      double ccor = ( sumxy - 6.0*mux*muy )/( 6.0*sigx*sigy );
+      double ccor = ( sumxy - ntsample*mux*muy )/( ntsample*sigx*sigy );
 
+      // find the best ccor strips
       if( mod_data.Bestmatch_xstrips[ixstrip] < 0 || ccor > mod_data.BestCor_xstrips[ixstrip] ){
-	mod_data.Bestmatch_xstrips[ixstrip] = iystrip;
-	mod_data.BestCor_xstrips[ixstrip] = ccor;
+	        mod_data.Bestmatch_xstrips[ixstrip] = iystrip;
+	        mod_data.BestCor_xstrips[ixstrip] = ccor;
       }
 
       if( mod_data.Bestmatch_ystrips[iystrip] < 0 || ccor > mod_data.BestCor_ystrips[iystrip] ){
-	mod_data.Bestmatch_ystrips[iystrip] = ixstrip;
-	mod_data.BestCor_ystrips[iystrip] = ccor;
+					mod_data.Bestmatch_ystrips[iystrip] = ixstrip;
+					mod_data.BestCor_ystrips[iystrip] = ccor;
       }
     }
   }
+  //probably this is a good place to check whether it do the matching correctly
+
 
   // Every x strip and y strip will have at least one "best match" assigned to it. We loop over whichever array is SMALLER.
   // Each strip in the SMALLER array could be associated with (in principle) more than one strip in the LARGER array
@@ -365,22 +372,27 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
   //   }
   // }
 
+  // find the match candidate 
   if( mod_data.xstrips.size() > 0 && mod_data.ystrips.size() > 0 ){
     for( set<int>::iterator iy=mod_data.ystrips.begin(); iy!=mod_data.ystrips.end(); ++iy ){
       int iystrip = *iy;
-      int bestx = mod_data.Bestmatch_ystrips[iystrip];
+      int bestx = mod_data.Bestmatch_ystrips[iystrip];  // located the best match x from the previous step
       if( mod_data.BestCor_ystrips[iystrip] > stripcorthreshold ){ //match with correlation coefficient above threshold:
-	mod_data.xstrips_filtered.insert( bestx );
-	mod_data.ystrips_filtered.insert( iystrip );
+				mod_data.xstrips_filtered.insert( bestx );
+				mod_data.ystrips_filtered.insert( iystrip );
       }
     }
 
     for( set<int>::iterator ix=mod_data.xstrips.begin(); ix!=mod_data.xstrips.end(); ++ix ){
       int ixstrip = *ix;
       int besty = mod_data.Bestmatch_xstrips[ixstrip];
+			//stripcorthreshold pearson corrolation coefficiency, need to check the range
+			// -1/1 strong corrolated 
+			// 0    no direct corrolation
       if( mod_data.BestCor_xstrips[ixstrip] > stripcorthreshold ){ //match with correlation coefficient above threshold:
-	mod_data.xstrips_filtered.insert( ixstrip );
-	mod_data.ystrips_filtered.insert( besty );
+				//probabaly, there is duplicated match
+				mod_data.xstrips_filtered.insert( ixstrip );
+				mod_data.ystrips_filtered.insert( besty );
       }
     }
   }
@@ -427,7 +439,6 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 
     //choose starting pixel by largest ADC value, largest ADC sum, or largest correlation coefficient?
     //initially, let's go with largest correlation coefficient:
-
     double maxADCXY=-1.0;
     int ixmax=-1,iymax=-1,pixelmax=-1;
 
@@ -439,7 +450,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 
     // We probably shouldn't hard-code this, but make it user-configurable: in high-rate conditions we may want to allow much larger numbers of possible strip combinations:
     if( ncombos > 100000 ){
-      //     cout << "too many strip combos this module, giving up, module..." << module << endl;
+      cout << "too many strip combos this module, giving up, module..." << module << endl;
       returnval = -1;
       break;
     }
@@ -459,7 +470,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	
 	double sumx=0.0, sumy=0.0, sumx2=0.0, sumy2=0.0, sumxy=0.0;
 
-	for( int isamp=0; isamp<6; isamp++ ){
+	for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	  double ADCx = mod_data.ADCsamp_xstrips[ixstrip][isamp];
 	  double ADCy = mod_data.ADCsamp_ystrips[iystrip][isamp];
 	  
@@ -469,15 +480,16 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	  sumy2 += pow(ADCy,2);
 	  sumxy += ADCx*ADCy;
 	}
-	
-	double mux = sumx/6.0;
-	double muy = sumy/6.0;
-	double varx = sumx2/6.0-pow(mux,2);
-	double vary = sumy2/6.0-pow(muy,2);
+	// pearson corrolated coefficiency
+	double ntsample=(double) nADCsamples;
+	double mux = sumx/ntsample;
+	double muy = sumy/ntsample;
+	double varx = sumx2/ntsample-pow(mux,2);
+	double vary = sumy2/ntsample-pow(muy,2);
 	double sigx = sqrt(varx);
 	double sigy = sqrt(vary);
 	
-	double ccor = ( sumxy - 6.0*mux*muy )/( 6.0*sigx*sigy );
+	double ccor = ( sumxy - ntsample*mux*muy )/( ntsample*sigx*sigy );
 
 	double ADCXY = sqrt( mod_data.ADCsum_xstrips[ixstrip]*mod_data.ADCsum_ystrips[iystrip] );
 
@@ -500,7 +512,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	    maxcor = ccor;
 	    maxADCXY = ADCXY;
 	    ixmax = ixstrip;
-	    iymax = iystrip;
+	    iymax = iystrip;    // find the best match?????
 	  }
 	}
       }
@@ -722,7 +734,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	txsum += ADCtemp * tstrip;
 	txsum2 += ADCtemp * pow(tstrip,2);
 
-	for( int isamp=0; isamp<6; isamp++ ){
+	for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	  sumxsamp[isamp] += mod_data.ADCsamp_xstrips[ixstrip][isamp];
 	}
       }
@@ -752,13 +764,13 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 
 	tysum += ADCtemp * tstrip;
 	tysum2 += ADCtemp * pow(tstrip,2);
-	for( int isamp=0; isamp<6; isamp++ ){
+	for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	  sumysamp[isamp] += mod_data.ADCsamp_ystrips[iystrip][isamp];
 	}
       }
 
       double csumxsamp =0.0, csumysamp=0.0, csumx2samp=0.0, csumy2samp=0.0, csumxysamp=0.0;
-      for( int isamp=0; isamp<6; isamp++ ){
+      for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	csumxsamp += sumxsamp[isamp];
 	csumysamp += sumysamp[isamp];
 	csumx2samp += pow(sumxsamp[isamp],2);
@@ -766,14 +778,16 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	csumxysamp += sumxsamp[isamp]*sumysamp[isamp];
       }
 
-      double mux = csumxsamp/6.0;
-      double muy = csumysamp/6.0;
-      double varx = csumx2samp/6.0-pow(mux,2);
-      double vary = csumy2samp/6.0-pow(muy,2);
+      const double ntsample=nADCsamples;
+      
+			double mux = csumxsamp/ntsample;
+      double muy = csumysamp/ntsample;
+      double varx = csumx2samp/ntsample-pow(mux,2);
+      double vary = csumy2samp/ntsample-pow(muy,2);
       double sigx = sqrt(varx);
       double sigy = sqrt(vary);
 
-      double ccor = (csumxysamp - 6.0*mux*muy)/(6.0*sigx*sigy);
+      double ccor = (csumxysamp - ntsample*mux*muy)/(ntsample*sigx*sigy);
 
       //      if( ccor >= clustcorthreshold && ADCsumx+ADCsumy > thresh_clustersum*2.0 ){
       
@@ -2284,10 +2298,11 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
   }
   
   //check the branch in order to check whether the root contains the branch
-
+  //loop on the event
+  // main loop on recontruct the hit informations 
   while( T->GetEntry(nevent++) && (NMAX < 0 || nevent < NMAX ) ){
-    if( nevent % 1000 == 0 ) cout << nevent << endl;
-
+    
+		if( nevent % 1000 == 0 ) cout << nevent << endl;  // change infor 
     //Clustering and hit reconstruction:
 
     set<int> modules_hit;
@@ -2348,12 +2363,12 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
     map<int,int> mod_maxstripY;
     map<int,double> mod_ADCmaxY;
-    
+    // loop on each entry and loop on the channals
     for( int ich=0; ich<T->nch; ich++ ){
       int strip = (T->strip)[ich];
       int plane = (T->planeID)[ich];
       int module = (T->detID)[ich];
-      int layer = mod_layer[module];
+      int layer = mod_layer[module];  // redirection to the layer ID 
 
       modules_hit.insert( module );
       
@@ -2361,8 +2376,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       
       //TODO Need to change in order to make it work
       //
-
-
+      // redirect the adcsample informations 
       int ADCsamples[nADCsamples];
       ADCsamples[0] = (T->adc0)[ich];
       ADCsamples[1] = (T->adc1)[ich];
@@ -2398,33 +2412,35 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       double tsigma = 0.0;
 
       double tcorr;
-      
+      // if this is x-dimension 
       if (plane == mod_uplaneID[module] && keepstrip) { //x (vertical/long) axis
 				//mod_xstrips_hit[module].insert( strip );
 
 				ModData[module].xstrips.insert(strip);
-				ModData[module].ADCsum_xstrips[strip] = 0.0;
-				ModData[module].ADCsamp_xstrips[strip].resize(6);
+				ModData[module].ADCsum_xstrips[strip] = 0.0;  // sum of the six time samples 
+				ModData[module].ADCsamp_xstrips[strip].resize(6); //
 
 				// ADCsum_xstrips[module][strip] = 0.0;
 				// ADCsamp_xstrips[module][strip].resize(6);
+				// loop on the six time samples
 				for (int isamp = 0; isamp < nADCsamples; isamp++) {
 
 					ModData[module].ADCsamp_xstrips[strip][isamp] =
 							ADCsamples[isamp];
-					ModData[module].ADCsum_xstrips[strip] += ADCsamples[isamp];
+					ModData[module].ADCsum_xstrips[strip] += ADCsamples[isamp];   // the sum of the time samples 
 
 					// ADCsamp_xstrips[module][strip][isamp] = ADCsamples[isamp];
 					// ADCsum_xstrips[module][strip] += ADCsamples[isamp];
 
-					hADCvsSampleAllStrips->Fill(isamp, ADCsamples[isamp]);
+					hADCvsSampleAllStrips->Fill(isamp, ADCsamples[isamp]); // TH2D
 
 					// it seems like this is construct the hit time
-					double tsample = 12.5 + 25.0 * isamp;
+					double tsample = 12.5 + 25.0 * isamp;       // reconstruct the hit time 
 
-					tsum += ADCsamples[isamp] * tsample;
-					tsum2 += ADCsamples[isamp] * pow(tsample, 2);
+					tsum += ADCsamples[isamp] * tsample;            // get the first order weighted average 
+					tsum2 += ADCsamples[isamp] * pow(tsample, 2);   // get the second order weighted average 
 
+					// find the max adc and its tsample ID 
 					if (isamp == 0
 							|| ADCsamples[isamp]
 									> ModData[module].ADCmax_xstrips[strip]) {
@@ -2436,7 +2452,9 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 					}
 				}
 
+				// weighted average on time
 				tmean = tsum / ModData[module].ADCsum_xstrips[strip];
+				//
 				tsigma = sqrt(
 						fabs(
 								tsum2 / ModData[module].ADCsum_xstrips[strip]
@@ -2454,25 +2472,32 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 						walkcor_sigma_func->Eval(
 								ModData[module].ADCsum_xstrips[strip]);
 
+				//sum of the ADC tsamples
 				hADCsumAllStrips->Fill(ModData[module].ADCsum_xstrips[strip]);
 
 				layers_hitX.insert(layer);
 
-				NstripX_layer[layer] += 1;
+				NstripX_layer[layer] += 1;  // number of strips fired 
 
+				//The maximum ADC on the module
 				if (mod_maxstripX.find(module) == mod_maxstripX.end()
 						|| ModData[module].ADCsum_xstrips[strip]
 								> mod_ADCmaxX[module]) {
-					mod_ADCmaxX[module] = ModData[module].ADCsum_xstrips[strip];
+					mod_ADCmaxX[module] = ModData[module].ADCsum_xstrips[strip];//Get the maxADC on this module 
 					mod_maxstripX[module] = strip;
 				}
-
+		
 			} else if (plane == mod_vplaneID[module] && keepstrip) { //y (horizontal/short) axis
+			// there should be no difference between x and y, probabaly need to combine with the x
+			// TODO combine those two algo into one for X and Y
+			// probabaly the only thing need to change to the way to save the data  
 				ModData[module].ystrips.insert(strip);
 
 				ModData[module].ADCsum_ystrips[strip] = 0.0;
-				ModData[module].ADCsamp_ystrips[strip].resize(6);
+				ModData[module].ADCsamp_ystrips[strip].resize(6); //TODO, need to change  
+
 				for (int isamp = 0; isamp < nADCsamples; isamp++) {
+					//calculate the sum of tsamples, and redirect the buff
 					ModData[module].ADCsamp_ystrips[strip][isamp] =
 							ADCsamples[isamp];
 					ModData[module].ADCsum_ystrips[strip] += ADCsamples[isamp];
@@ -2509,7 +2534,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	
 	layers_hitY.insert(layer);
 
-	NstripY_layer[layer] += 1;
+	NstripY_layer[layer] += 1;   //number of strip fired 
 
 	if( mod_maxstripY.find( module ) == mod_maxstripY.end() || ModData[module].ADCsum_ystrips[strip] > mod_ADCmaxY[module] ){
 	  mod_ADCmaxY[module] = ModData[module].ADCsum_ystrips[strip];
@@ -2517,19 +2542,23 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	}
       }
 
+			//buffers all the fired strips on this entry, which is a give module
+			//probabaly different module, will change, if the latency is different??
+			//maybe need to add the plot for each individual modules  
       if( keepstrip ){
-	hStripTmean->Fill(tmean);
-	hStripSigmaT->Fill(tsigma);
+					hStripTmean->Fill(tmean);
+					hStripSigmaT->Fill(tsigma);
 
-	hStripTcorr->Fill( tcorr );
+					hStripTcorr->Fill( tcorr );
 	
       }
     }
 
-
+		//finish loop on all the strips, next will need to start process all the signals
+    //TODO do the conbination in layers instead of modules?
     for( set<int>::iterator ilay=layers_hitX.begin(); ilay != layers_hitX.end(); ++ilay ){
       if( layers_hitY.find( *ilay ) != layers_hitY.end() ){
-	layers_hitXY.insert( *ilay );
+		    layers_hitXY.insert( *ilay );
       }
     }
     
@@ -2544,16 +2573,18 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       hNstripsY_layer->Fill( NstripY_layer[ilay],ilay );
     }
     
+		//start reconstruct the clusters doing match on the x and y
+		//TODO change to dynamic determine how many chamber needed in a track??
     if( layers_hitXY.size() >= 3 ){ //enough layers hit to (possibly) form a track: only bother with clustering and attempted track finding if this is the case: 
 
       if( eventdisplaymode != 0 ){
 	for( int ilayer=0; ilayer<nlayers; ilayer++ ){
 	  ( (TH2D*) (*hframe_layers)[ilayer] )->Reset();
-	}
+		}
       }
 
       //we should probably restructure the earlier part of the code to eliminate the overhead of copying all this info:
-      
+
       map<int,clusterdata_t> mod_clusters; //mapping of found clusters by module;
 
       //map<int,int> N2D_match_layer;
@@ -2563,12 +2594,14 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	clusterdata_t clusttemp;
 	
 	//for( map<int,int>::iterator jmod=mod_maxstripX.begin(); jmod!=mod_maxstripX.end(); ++jmod ){
-	int module = *imod;
+	int module = *imod;    //module ID 
 	int layer = mod_layer[module];
 
 	ModData[module].modindex = module;
 	ModData[module].layerindex = layer;
 	int strip = mod_maxstripX[module];
+	
+	//TODO probably this is not good for 3 time sample situation
 	if( fabs( ModData[module].Tmean_xstrips[strip] - 64.3 ) <= 2.5*16.3 &&
 	    fabs( ModData[module].Tsigma_xstrips[strip] -36.25) <= 2.5*5.7 ){
 	  for( int isamp=0; isamp<nADCsamples; isamp++ ){
@@ -2591,6 +2624,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	//	cout << "starting cluster finding, event " << T->evtID << ", module " << module << ". (nstrip X, nstrip Y) = (" << datatemp.xstrips.size()
 	//    << ", " << datatemp.ystrips.size() << ")" << endl;
+	// continue
 	int clusterflag = find_clusters_by_module( ModData[module], clusttemp );
 
 	if( clusterflag != 0 ){
@@ -2632,8 +2666,9 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
       //      cout << "Finding tracks, event..." << T->evtID << endl;
 
+			//
       if( nlayers_with_2Dclust >= 3 ){
-      
+      //three hit can  form a track 
 	find_tracks( mod_clusters, tracktemp );
 	
 	//	cout << "track finding successful..." << endl;
@@ -2778,7 +2813,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	    hADCsumXstrip_max->Fill( ModData[module].ADCsum_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]] );
 	    hADCsumYstrip_max->Fill( ModData[module].ADCsum_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]] );
 
-	    for( int isamp=0; isamp<6; isamp++ ){
+	    for( int isamp=0; isamp<nADCsamples; isamp++ ){
 	      hADCsampXstrip_max->Fill( isamp, ModData[module].ADCsamp_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]][isamp] );
 	      hADCsampYstrip_max->Fill( isamp, ModData[module].ADCsamp_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]][isamp] );
 	    }

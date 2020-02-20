@@ -28,6 +28,7 @@ public :
    Int_t           strip[MAXNCH];   //[nch]
    Int_t           detID[MAXNCH];   //[nch]
    Int_t           planeID[MAXNCH];   //[nch]
+   //need to find a more efficient way to extract the branch informations
    Int_t           adc0[MAXNCH];   //[nch]
    Int_t           adc1[MAXNCH];   //[nch]
    Int_t           adc2[MAXNCH];   //[nch]
