@@ -13,9 +13,10 @@ plot_GEM
 
 Usage example:
 
+~~~~
 root [0] .L GEM_reconstruct.C+
 root [1] GEM_reconstruct("../HitData/GEMfixNov18/Hit_run3805_*.root","configINFN.txt","temp.root");
-
+~~~~
 
 General usage: GEM_reconstruct( infilename, configfilename, outfilename );
 
@@ -27,8 +28,10 @@ outfilename is the desired name of the output ROOT file.
 
 Similarly, for the alignment code:
 
+~~~~
 root [0] .L GEM_align.C+
 root [1] GEM_align(inputfilename, configfilename, outputfilename);
+~~~~
 
 where inputfilename is the name of a root file that is the output of GEM_reconstruct containing the relevant reconstructed hit and track information, configfilename is the text configuration file, and outputfilename is the name of a text output file containing the new alignment parameters for each module. The output of GEM_align can be directly copied and pasted into the configuration file for GEM_reconstruct to repeat the tracking with the new alignment parameters.
 
@@ -41,9 +44,27 @@ configalignHallAtest.txt: Example alignment configuration file for five-layer UV
 
 I have also added two utility macros:
 
+~~~~
 plot_GEMrun_summary.C
 plot_GEMrun_summary_HallA.C
+~~~~
 
 which can be used to generate a PDF file with a nice group of summary plots of the analysis. 
 
 Detailed documentation of configuration parameters is forthcoming. In the mean time, read the source code.
+
+## Issues and Solutions 
+* When run
+  ~~~~
+  root [0] .L GEM_reconstruct.C+
+  root [1] GEM_reconstruct("../HitData/GEMfixNov18/Hit_run3805_*.root","configINFN.txt","temp.root");
+  ~~~~
+
+  It will crash. It seems like doing the following step solve the issue, Why?
+  ~~~~
+  root [0] .L GEM_reconstruct.C
+  root [1] GEM_reconstruct("../HitData/GEMfixNov18/Hit_run3805_*.root","configINFN.txt","temp.root");
+  ~~~~
+  
+*  How to me
+
