@@ -2312,7 +2312,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
   while( T->GetEntry(nevent++) && (NMAX < 0 || nevent < NMAX ) ){
     int ntotalEntries=ntotal;
 		if((NMAX>0)&&(ntotal>NMAX)) ntotalEntries=NMAX;
-		if( nevent % 1000 == 0 ) cout << nevent <<"/"<<ntotalEntries<<"  "<<(100*nevent/ntotalEntries)<<"\%"<< endl;  // change infor 
+		if( nevent % 1000 == 0 ) cout << nevent <<"/"<<ntotalEntries<<"  "<<(100*nevent/ntotalEntries)<<"\%\r"<< flush;  // change infor 
 
     //Clustering and hit reconstruction:
     set<int> modules_hit;
