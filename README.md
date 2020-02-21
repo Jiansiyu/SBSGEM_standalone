@@ -66,5 +66,10 @@ Detailed documentation of configuration parameters is forthcoming. In the mean t
   root [1] GEM_reconstruct("../HitData/GEMfixNov18/Hit_run3805_*.root","configINFN.txt","temp.root");
   ~~~~
   
-*  How to me
+
+## Dev Plan
+* add the function used for loop on the event and compare with the standard PRex analysis code
+* diagest code used for generate the plot for the cut 
+* add the function used display how many tracks found 
+* ....
 
