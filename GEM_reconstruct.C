@@ -45,6 +45,7 @@ using namespace std;
 //We need to modify this so that we no longer assume that every module has the same numbers of strips or strip orientations:
 //The only assumption we will retain is the assumption that each module has two non-parallel strip orientations, generically denoted "U" and "V"
 //We will also make the strip pitch along each direction a configurable parameter:
+// all those setting should be updated when load the configure file 
 int nstripsx = 1280;
 int nstripsy = 1024;
 int nmodules = 12;
@@ -771,11 +772,11 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 
       double csumxsamp =0.0, csumysamp=0.0, csumx2samp=0.0, csumy2samp=0.0, csumxysamp=0.0;
       for( int isamp=0; isamp<nADCsamples; isamp++ ){
-	csumxsamp += sumxsamp[isamp];
-	csumysamp += sumysamp[isamp];
-	csumx2samp += pow(sumxsamp[isamp],2);
-	csumy2samp += pow(sumysamp[isamp],2);
-	csumxysamp += sumxsamp[isamp]*sumysamp[isamp];
+				csumxsamp += sumxsamp[isamp];
+				csumysamp += sumysamp[isamp];
+				csumx2samp += pow(sumxsamp[isamp],2);
+				csumy2samp += pow(sumysamp[isamp],2);
+				csumxysamp += sumxsamp[isamp]*sumysamp[isamp];
       }
 
       const double ntsample=nADCsamples;
@@ -1538,6 +1539,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
   walkcor_mean_func->SetParameters(walkcor_mean_params);
   walkcor_sigma_func->SetParameters(walkcor_sigma_params);
   
+	
   gROOT->ProcessLine(".x ~/rootlogon.C");
   gStyle->SetPalette(kRainBow);
   
@@ -1591,7 +1593,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	    TString snmodules = ( (TObjString*) (*tokens)[1] )->GetString();
 	    nmodules = snmodules.Atoi();
 	  }
-	
+	  
 	  if( skey == "mod_x0" && ntokens >= nmodules + 1 ){
 	    for( int i=1; i<ntokens; i++ ){
 	      TString smodx = ( (TObjString*) (*tokens)[i] )->GetString();
@@ -1922,7 +1924,9 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       }
     }
   }
-
+  
+	// take the average Z to be the z of each layer,
+	// probabaly need to set an cut on Z in case of mis-input
   zavg_layer.resize(nlayers);
   int nmod_layer[nlayers];
   for( int ilayer=0; ilayer<nlayers; ilayer++ ){
@@ -1938,6 +1942,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
     zavg_layer[ilayer] /= double(nmod_layer[ilayer]);
     cout << "ilayer, zavg = " << ilayer << ", " << zavg_layer[ilayer] << endl;
   }
+// end of loading the configuration file 
 
   //TODO why this is needed   ???????
   //populate the array of all possible combinations of layers:
@@ -2040,18 +2045,22 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
   //compute upper and lower limits for global X, Y coordinates within each layer for purposes of histogram definitions for output and event display:
   for( int imodule=0; imodule<nmodules; imodule++ ){
     int layer = mod_layer[imodule];
-    
+
+    // take the center of the module to be the corrdination 0
+		// it seems like all the position in one layer should take same reference point
     double xlo_module = mod_x0[imodule] - mod_Lx[imodule]/2.0;
     double xhi_module = mod_x0[imodule] + mod_Lx[imodule]/2.0;
     double ylo_module = mod_y0[imodule] - mod_Ly[imodule]/2.0;
     double yhi_module = mod_y0[imodule] + mod_Ly[imodule]/2.0;
 
+	  //take the min of min or max of max, probabaly it use this overall min or max as the boundary
     if( xgmin_layer.find( layer ) == xgmin_layer.end() ){ //first time in this layer:
       xgmin_layer[layer] = xlo_module;
       xgmax_layer[layer] = xhi_module;
       ygmin_layer[layer] = ylo_module;
       ygmax_layer[layer] = yhi_module;
     } else {
+			// take the minmin 
       xgmin_layer[layer] = ( xlo_module < xgmin_layer[layer] ) ? xlo_module : xgmin_layer[layer];
       xgmax_layer[layer] = ( xhi_module > xgmax_layer[layer] ) ? xhi_module : xgmax_layer[layer];
       ygmin_layer[layer] = ( ylo_module < ygmin_layer[layer] ) ? ylo_module : ygmin_layer[layer];
@@ -2297,14 +2306,12 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
     mod_Rotinv[imodule] = Rtemp.Inverse();
   }
   
-  //check the branch in order to check whether the root contains the branch
-  //loop on the event
   // main loop on recontruct the hit informations 
   while( T->GetEntry(nevent++) && (NMAX < 0 || nevent < NMAX ) ){
     
 		if( nevent % 1000 == 0 ) cout << nevent << endl;  // change infor 
-    //Clustering and hit reconstruction:
 
+    //Clustering and hit reconstruction:
     set<int> modules_hit;
     //list of unique strips fired in X and Y directions, by module:
     set<int> layers_hit;

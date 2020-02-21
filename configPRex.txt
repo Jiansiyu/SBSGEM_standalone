@@ -1,3 +1,5 @@
+#! make sure all the configure should match the nmodules number (larger should be fine)
+#! for mod_xxx configure, each row is the configuration for the module 
 nlayers 6
 nmodules 6
 #position: ModuleID start from 0, and the connected LayerID
@@ -6,6 +8,8 @@ mod_layer  0   1   2   3   4    5
 # X, Y, and Z offsets are given in mm:
 # Original offsets:
 # need to check where is the reference point
+# here take the detector center to be the reference point
+# all the modules in same layer need to take same reference point
 mod_x0   -0.0094110320      -0.0049617020    -0.0034276410      -0.16155132      -0.16307054      -0.16354599      
 mod_y0    0.0034447100       0.0088434100      0.010135967     -0.028257110     -0.027389080      0.020171210
 mod_z0           1.161          1.7979800        2.0902131        2.7165651        2.8749137        2.9976041
