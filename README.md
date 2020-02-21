@@ -1,3 +1,10 @@
+# branch informations 
+
+WorkBranch_PlotCheck 
+
+The track efficiency seems like pretty low. In this branch, add the event by event display functions used to check each indivadual event.
+
+
 # SBSGEM_standalone
 Standalone ROOT macros for analysis of GEM data.
 

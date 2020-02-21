@@ -112,6 +112,10 @@ bool usehitmaps=false;
 TH2D *hXmom_int;
 TH2D *hYmom_int; 
 
+
+//TODO temp usage, used for check the
+
+
 struct moduledata_t { //for now, we will keep the "x" and "y" notation for these data structures:
   int modindex,layerindex;
   set<int> xstrips;
@@ -344,10 +348,9 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
       }
     }
   }
-  //probably this is a good place to check whether it do the matching correctly
-
 
   // Every x strip and y strip will have at least one "best match" assigned to it. We loop over whichever array is SMALLER.
+
   // Each strip in the SMALLER array could be associated with (in principle) more than one strip in the LARGER array
   // if( mod_data.xstrips.size() > mod_data.ystrips.size() ){ //more X strips: loop over Y strips:
   //   for( set<int>::iterator iy=mod_data.ystrips.begin(); iy!=mod_data.ystrips.end(); ++iy ){
@@ -378,6 +381,7 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
     for( set<int>::iterator iy=mod_data.ystrips.begin(); iy!=mod_data.ystrips.end(); ++iy ){
       int iystrip = *iy;
       int bestx = mod_data.Bestmatch_ystrips[iystrip];  // located the best match x from the previous step
+			std::cout<<"match corr:"<<mod_data.BestCor_ystrips[iystrip]<<std::endl;
       if( mod_data.BestCor_ystrips[iystrip] > stripcorthreshold ){ //match with correlation coefficient above threshold:
 				mod_data.xstrips_filtered.insert( bestx );
 				mod_data.ystrips_filtered.insert( iystrip );
@@ -397,6 +401,7 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
       }
     }
   }
+
 }
 
 
@@ -2337,33 +2342,6 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
     //let's consolidate all this into the "moduledata_t" data structure to avoid overhead of copying all these complicated arrays into the c struct data members:
 
     map<int,moduledata_t> ModData;
-    
-    // map<int,set<int> > mod_xstrips_hit;
-    // map<int,set<int> > mod_ystrips_hit;
-
-    // //how to store strip amplitudes: mapping of ADC sums by module, strip ID:
-    // map<int,map<int,double> > ADCsum_xstrips;
-    // map<int,map<int,double> > ADCsum_ystrips;
-
-    // //how to store strip ADC samples: mapping of individual samples by module, strip ID:
-    // map<int,map<int,vector<double> > > ADCsamp_xstrips;
-    // map<int,map<int,vector<double> > > ADCsamp_ystrips;
-
-    // map<int,map<int,double> > ADCmax_xstrips; //max ADC sample mapped by module, strip:
-    // map<int,map<int,double> > ADCmax_ystrips; //max ADC sample mapped by module, strip:
-
-    // map<int,map<int,int> > isampmax_xstrips;
-    // map<int,map<int,int> > isampmax_ystrips;
-    
-    // map<int,map<int,double> > Tmean_xstrips;
-    // map<int,map<int,double> > Tsigma_xstrips;
-    // map<int,map<int,double> > Tmean_ystrips;
-    // map<int,map<int,double> > Tsigma_ystrips;
-
-    // map<int,map<int,double> > Tmean_xstrips_walkcor;
-    // map<int,map<int,double> > Tmean_ystrips_walkcor;
-    // map<int,map<int,double> > Tsigma_xstrips_walkcor;
-    // map<int,map<int,double> > Tsigma_ystrips_walkcor;
     
     map<int,int> mod_maxstripX;
     map<int,double> mod_ADCmaxX;
