@@ -46,11 +46,11 @@ using namespace std;
 //The only assumption we will retain is the assumption that each module has two non-parallel strip orientations, generically denoted "U" and "V"
 //We will also make the strip pitch along each direction a configurable parameter:
 // all those setting should be updated when load the configure file 
-int nstripsx = 1280;
-int nstripsy = 1024;
-int nmodules = 12;
-int nlayers  = 4;
-int nADCsamples = 6;
+int nstripsx = 1536;
+int nstripsy = 1280;
+int nmodules = 6;
+int nlayers  = 6;
+int nADCsamples = 3;
 int minLayerTrack=5;   // minimum layers fired per track
 
 double strip_pitch = 0.4; //mm
