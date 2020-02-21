@@ -46,6 +46,7 @@ using namespace std;
 //The only assumption we will retain is the assumption that each module has two non-parallel strip orientations, generically denoted "U" and "V"
 //We will also make the strip pitch along each direction a configurable parameter:
 // all those setting should be updated when load the configure file 
+
 int nstripsx = 1536;
 int nstripsy = 1280;
 int nmodules = 6;
@@ -381,7 +382,6 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
     for( set<int>::iterator iy=mod_data.ystrips.begin(); iy!=mod_data.ystrips.end(); ++iy ){
       int iystrip = *iy;
       int bestx = mod_data.Bestmatch_ystrips[iystrip];  // located the best match x from the previous step
-			std::cout<<"match corr:"<<mod_data.BestCor_ystrips[iystrip]<<std::endl;
       if( mod_data.BestCor_ystrips[iystrip] > stripcorthreshold ){ //match with correlation coefficient above threshold:
 				mod_data.xstrips_filtered.insert( bestx );
 				mod_data.ystrips_filtered.insert( iystrip );
@@ -401,7 +401,6 @@ void filter_strips_by_module( moduledata_t &mod_data, double cor_threshold=0.0 )
       }
     }
   }
-
 }
 
 
@@ -437,7 +436,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 
   int returnval = 0;
   
-  while( foundclust ){
+  while( foundclust ){ // find cluster?
 
     foundclust = false;
     
@@ -451,7 +450,7 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
     double maxcor=-1.1;
     
     //Find the xy pair with largest correlation coefficient, try to build a cluster around it:
-
+    // how many combinations if x have n hit and y have m hit 
     int ncombos = mod_data.xstrips_filtered.size()*mod_data.ystrips_filtered.size();
 
     // We probably shouldn't hard-code this, but make it user-configurable: in high-rate conditions we may want to allow much larger numbers of possible strip combinations:
@@ -467,25 +466,22 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
       //for( set<int>::iterator iy=mod_data.ystrips_filtered.begin(); iy != mod_data.ystrips_filtered.end(); ++iy ){
       int ixstrip=*ix;
       for( set<int>::iterator iy=mod_data.ystrips_filtered.begin(); iy != mod_data.ystrips_filtered.end(); ++iy ){
-	int iystrip = *iy;
-	//	int pixel = ixstrip+iystrip*nstripsy;
-	
-	//	double ADCXY = mod_data.ADCmax_xstrips[ixstrip] * mod_data.ADCmax_ystrips[iystrip]; 
+				int iystrip = *iy;
+				//	int pixel = ixstrip+iystrip*nstripsy;
+				//	double ADCXY = mod_data.ADCmax_xstrips[ixstrip] * mod_data.ADCmax_ystrips[iystrip]; 
+				//Question: do we really need to compute these again? I think maybe not, but to be on the safe side let's do it anyway:		
+				double sumx=0.0, sumy=0.0, sumx2=0.0, sumy2=0.0, sumxy=0.0;
 
-	//Question: do we really need to compute these again? I think maybe not, but to be on the safe side let's do it anyway:
-	
-	double sumx=0.0, sumy=0.0, sumx2=0.0, sumy2=0.0, sumxy=0.0;
-
-	for( int isamp=0; isamp<nADCsamples; isamp++ ){
-	  double ADCx = mod_data.ADCsamp_xstrips[ixstrip][isamp];
-	  double ADCy = mod_data.ADCsamp_ystrips[iystrip][isamp];
+				for( int isamp=0; isamp<nADCsamples; isamp++ ){
+	  			double ADCx = mod_data.ADCsamp_xstrips[ixstrip][isamp];
+	  			double ADCy = mod_data.ADCsamp_ystrips[iystrip][isamp];
 	  
-	  sumx += ADCx;
-	  sumy += ADCy;
-	  sumx2 += pow(ADCx,2);
-	  sumy2 += pow(ADCy,2);
-	  sumxy += ADCx*ADCy;
-	}
+	  			sumx += ADCx;
+	  			sumy += ADCy;
+	  			sumx2 += pow(ADCx,2);
+	  			sumy2 += pow(ADCy,2);
+	  			sumxy += ADCx*ADCy;
+			}
 	// pearson corrolated coefficiency
 	double ntsample=(double) nADCsamples;
 	double mux = sumx/ntsample;
@@ -511,16 +507,17 @@ int find_clusters_by_module( moduledata_t mod_data, clusterdata_t &clust_data ){
 	double sigdt = sqrt(pow(mod_data.Tsigma_xstrips_walkcor[ixstrip],2)+pow(mod_data.Tsigma_ystrips_walkcor[iystrip],2));
 	
 	//only seed a cluster from a local maximum if the correlation coefficient is reasonable:
+	// find the local maximum of x-y corrolation 
 	if( !stripxused[ixstrip] && !stripyused[iystrip] && ccor >= stripcorthreshold &&
 	    fabs( dtcorr ) <= tstripcut_nsigma*sigdt ){
 	  if( ixmax < 0 || ccor > maxcor ){
-	  //if( ixmax < 0 || ADCXY > maxADCXY ){
-	    maxcor = ccor;
-	    maxADCXY = ADCXY;
-	    ixmax = ixstrip;
-	    iymax = iystrip;    // find the best match?????
-	  }
-	}
+	  		//if( ixmax < 0 || ADCXY > maxADCXY ){
+	    		maxcor = ccor;
+	   	 		maxADCXY = ADCXY;
+	    		ixmax = ixstrip;
+	    		iymax = iystrip;    // find the best match?????
+	  		}
+				}
       }
     }
 
