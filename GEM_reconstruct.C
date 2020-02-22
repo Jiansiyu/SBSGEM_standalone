@@ -1036,6 +1036,8 @@ void prune_clusters( clusterdata_t &clusttemp ){
 }
 
 void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
+  //TODO need to check the cluster, and the track
+
   //only attempt tracking if we have at least three layers with at least one 2D matched hit passing the XY and T correlation cuts:
 
   //  int nhitsrequired = nlayers;
@@ -1047,7 +1049,7 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
   map<int,vector<bool> > hitused2D; //flag to indicate hit is used in a track:
 
   //Here we are populating the hit arrays, mapped by layer, that won't change throughout the track-finding iterations:
-  for( map<int,clusterdata_t>::iterator imod=mod_clusters.begin(); imod != mod_clusters.end(); ++imod ){
+  for( map<int,clusterdata_t>::iterator imod=mod_clusters.begin(); imod != mod_clusters.end(); ++imod ){ // loop on the modules
     int module = imod->first;
     //clusterdata_t clusttemp = mod_clusters[module];
     int layer = mod_layer[module];
@@ -1082,7 +1084,8 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
     }
   }
 
-  if( layers_2Dmatch.size() >= 3 ){
+  //
+  if( layers_2Dmatch.size() >= minLayerTrack ){
     //trackdata_t trackdatatemp;
 
     trackdata.ntracks = 0;
