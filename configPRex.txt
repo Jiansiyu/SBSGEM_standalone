@@ -2,6 +2,7 @@
 #! for mod_xxx configure, each row is the configuration for the module 
 nlayers 6
 nmodules 6
+NMAX=200000
 #position: ModuleID start from 0, and the connected LayerID
 mod_layer  0   1   2   3   4    5 
 # for prex experiment, all the GEMs are aligned to VDC, probabaly the current initial position is not good enough
@@ -10,12 +11,18 @@ mod_layer  0   1   2   3   4    5
 # need to check where is the reference point
 # here take the detector center to be the reference point
 # all the modules in same layer need to take same reference point
-mod_x0   -9.4110320      -4.9617020     -3.4276410       -161.55132       -163.07054       -163.54599      
-mod_y0    3.4447100       8.8434100      10.135967       -28.257110       -27.389080        20.171210
-mod_z0         1161       1797.9800      2090.2131        2716.5651        2874.9137        2997.6041
-mod_ax        0.000           0.000          0.000            0.000            0.000            0.000
-mod_ay        0.000           0.000          0.000            0.000            0.000            0.000  
-mod_az        0.000           0.000          0.000            0.000            0.000            0.000
+mod_x0         -9.35341        -5.15471        -3.29799        -160.666        -163.071        -162.981
+mod_y0          3.65935         8.20683         10.4202        -26.3096        -27.3891         20.5816
+mod_z0            900.0          1585.8          1789.0         2341.35         2443.05          2540.0
+mod_ax        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        
+mod_ay        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
+mod_az        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
+#mod_x0   -9.4110320      -4.9617020     -3.4276410       -161.55132       -163.07054       -163.54599      
+#mod_y0    3.4447100       8.8434100      10.135967       -28.257110       -27.389080        20.171210
+#mod_z0         1161       1797.9800      2090.2131        2716.5651        2874.9137        2997.6041
+#mod_ax        0.000           0.000          0.000            0.000            0.000            0.000
+#mod_ay        0.000           0.000          0.000            0.000            0.000            0.000  
+#mod_az        0.000           0.000          0.000            0.000            0.000            0.000
 # going forward, more of the module geometry is configurable: "u" = X and "v" = Y
 mod_nstripsu  512 512 512 1536 1536 1536
 mod_nstripsv  256 256 256 1280 1280 1280 
