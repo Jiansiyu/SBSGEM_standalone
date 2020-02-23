@@ -2650,6 +2650,26 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  cout << "event " << T->evtID << ", module " << module << " too noisy, gave up" << endl;
 	}
 	
+	// this is an test point add by siyu
+	//check the cluster find efficnecy
+	std::cout<<"----------- Event: "<<T->evtID<<std::endl;
+	std::cout<<"\t===>cluster on X " << clusttemp.nclustx;
+	for(int i = 0; i < clusttemp.nstripx.size();i++){
+		std::cout<<"\t\t Number of stip:"<<clusttemp.nstripx[i]<<
+				"  ("<<clusttemp.ixstriplo[i]<<", "<<clusttemp.ixstriphi[i]<<
+				",  "<< clusttemp.nstripx[i]<<")"<<std::endl;
+	}
+	std::cout<<"\t===>cluster on Y " << clusttemp.nclustx;
+	for(int i = 0; i < clusttemp.nstripy.size();i++){
+		std::cout<<"\t\t Number of stip:"<<clusttemp.nstripy[i]<<
+				"  ("<<clusttemp.iystriplo[i]<<", "<<clusttemp.iystriphi[i]<<
+				",  "<< clusttemp.nstripy[i]<<")"<<std::endl;
+		}
+	getchar();
+	continue;
+
+
+
 	//	cout << "ending cluster finding " << endl;
 	
 	mod_clusters[module] = clusttemp;
