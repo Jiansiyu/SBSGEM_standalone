@@ -164,25 +164,26 @@ struct clusterdata_t { //1D and 2D clustering results by module:
 
   int modindex,layerindex;
   
+  // 2d cluster information
   int nclust2D;
   vector<int> itrack_clust2D;
-  vector<int> ixclust2D;
+  vector<int> ixclust2D; // cluster count/ID
   vector<int> iyclust2D;
-  vector<int> nstripx2D;
+  vector<int> nstripx2D;  // how many  strips in a give cluster
   vector<int> nstripy2D;
-  vector<double> xclust2D;
+  vector<double> xclust2D; // The physical reconstructed position(weighted average)
   vector<double> yclust2D;
-  vector<double> xclust2Dcorr;
+  vector<double> xclust2Dcorr; //WIth out map correction, this should be same as xclust2D/yclust2D
   vector<double> yclust2Dcorr;
-  vector<double> Eclust2D;
-  vector<double> tclust2D;
+  vector<double> Eclust2D;      //total/sum charge of  X and Y cluster
+  vector<double> tclust2D;      //mean of time x and y
   vector<double> tclust2Dwalkcorr; //walk-corrected cluster time
-  vector<double> dEclust2D;
-  vector<double> dtclust2D;
+  vector<double> dEclust2D;        // total charge on X - Y
+  vector<double> dtclust2D;        // T mean o X - Y
   vector<double> dtclust2Dwalkcorr; //"uncertainty" of weighted average cluster time:
   vector<double> CorrCoeff2D; //Correlation coefficient
   vector<double> CorrCoeffMaxStrips; //Correlation coefficient between X and Y strips used to "seed" the cluster:
-  vector<double> xglobal2D;
+  vector<double> xglobal2D;          // the corrected position after add the shift and rotation correction
   vector<double> yglobal2D;
   vector<double> zglobal2D; //calculate these ONCE:
   vector<double> xmom2D; // xmean - xstrip max (use to refine hit position reconstruction)
@@ -190,6 +191,7 @@ struct clusterdata_t { //1D and 2D clustering results by module:
   vector<bool> keepclust2D; //flag to include or not include cluster in tracking analysis: default to true; set by "prune" filtering algorithm:
 
   
+  //1D cluster informations
   int nclustx;
   vector<int> nstripx;
   vector<int> ixstriplo;
@@ -212,7 +214,19 @@ struct clusterdata_t { //1D and 2D clustering results by module:
   vector<double> tymean;
   vector<double> tysigma;
 
-  
+  void PrintCluster2D(){
+	  std::cout<<"\t ====> check2D cluster (Module"<<modindex<<", Layer"<<layerindex<<")"<<std::endl;
+	  std::cout<<"\t\t Total cluster2D:"<<nclust2D<<std::endl;
+	  for(int i = 0; i< nclust2D; i ++){
+		  std::cout<<"\t\t\t ==> cluster:"<<i<<std::endl<<
+				  "\t\t\t\t\t\t"<<"Cluster Count:("<<ixclust2D[i]<<","<<iyclust2D[i]<<")"<<std::endl<<
+				  "\t\t\t\t\t\t"<<"Cluster size :("<<nstripx2D[i]<<","<<nstripy2D[i]<<")"<<std::endl<<
+				  "\t\t\t\t\t\t"<<"Cluster Posit:("<<xclust2D[i]<<","<<yclust2D[i]<<")  -> range X ("<<ixstriplo[i]<<" <-> "<<ixstriphi[i]<<")  Y:("<<
+				  iystriplo[i]<<" <-> "<<iystriphi[i]<<")"<<std::endl<<
+				  "\t\t\t\t\t\t"<<"Cluster Keep :"<<keepclust2D[i]<<std::endl;
+
+	  }
+  }
   
 };
 
@@ -849,7 +863,7 @@ int find_clusters_by_module(moduledata_t mod_data, clusterdata_t &clust_data) {
 		  clust_data.itrack_clust2D.push_back( -1 );
 		  clust_data.ixclust2D.push_back( nclust );
 		  clust_data.iyclust2D.push_back( nclust );
-		  clust_data.nstripx2D.push_back( xstriplistclust.size() );
+		  clust_data.nstripx2D.push_back( xstriplistclust.size() );   // how
 		  clust_data.nstripy2D.push_back( ystriplistclust.size() );
 		  clust_data.xclust2D.push_back(clust_data.xmean[nclust]);
 		  clust_data.yclust2D.push_back(clust_data.ymean[nclust]);
@@ -1089,6 +1103,17 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 
     prune_clusters( mod_clusters[module] );
     
+    //check piont added by siyu
+    // check whether it keep the reasonable clusters
+    std::cout<<"**********"<<__FUNCTION__<<"****** check prune"<<std::endl;
+    auto clusttemp=mod_clusters[module];
+    clusttemp.PrintCluster2D();
+    getchar();
+    continue;
+
+
+
+
     if( mod_clusters[module].nclust2D > 0 ){
       for( int iclust=0; iclust<mod_clusters[module].nclust2D; iclust++ ){
 	// double ADCasym = mod_clusters[module].dEclust2D[iclust]/(2.*mod_clusters[module].Eclust2D[iclust]);
@@ -2538,42 +2563,49 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 				}
 
-	tmean = tsum/ModData[module].ADCsum_ystrips[strip];
-	tsigma = sqrt(fabs(tsum2/ModData[module].ADCsum_ystrips[strip]-pow(tmean,2)));
+			tmean = tsum/ModData[module].ADCsum_ystrips[strip];
+			tsigma = sqrt(fabs(tsum2/ModData[module].ADCsum_ystrips[strip]-pow(tmean,2)));
 
-	tcorr = tmean - walkcor_mean_func->Eval( ModData[module].ADCsum_ystrips[strip] );
-	
-	ModData[module].Tmean_ystrips[strip] = tmean;
-	ModData[module].Tsigma_ystrips[strip] = tsigma;
+			tcorr = tmean - walkcor_mean_func->Eval( ModData[module].ADCsum_ystrips[strip] );
 
-	ModData[module].Tmean_ystrips_walkcor[strip] = tcorr;
-	ModData[module].Tsigma_ystrips_walkcor[strip] = walkcor_sigma_func->Eval( ModData[module].ADCsum_ystrips[strip] );
-	
-	hADCsumAllStrips->Fill( ModData[module].ADCsum_ystrips[strip] );
-	
-	layers_hitY.insert(layer);
+			ModData[module].Tmean_ystrips[strip] = tmean;
+			ModData[module].Tsigma_ystrips[strip] = tsigma;
 
-	NstripY_layer[layer] += 1;   //number of strip fired 
+			ModData[module].Tmean_ystrips_walkcor[strip] = tcorr;
+			ModData[module].Tsigma_ystrips_walkcor[strip] = walkcor_sigma_func->Eval( ModData[module].ADCsum_ystrips[strip] );
 
-	if( mod_maxstripY.find( module ) == mod_maxstripY.end() || ModData[module].ADCsum_ystrips[strip] > mod_ADCmaxY[module] ){
-	  mod_ADCmaxY[module] = ModData[module].ADCsum_ystrips[strip];
-	  mod_maxstripY[module] = strip;
-	}
-      }
+			hADCsumAllStrips->Fill( ModData[module].ADCsum_ystrips[strip] );
+
+			layers_hitY.insert(layer);
+
+			NstripY_layer[layer] += 1;   //number of strip fired
+
+			if( mod_maxstripY.find( module ) == mod_maxstripY.end() || ModData[module].ADCsum_ystrips[strip] > mod_ADCmaxY[module] ){
+			  mod_ADCmaxY[module] = ModData[module].ADCsum_ystrips[strip];
+			  mod_maxstripY[module] = strip;
+				}
+			}
 
 			//buffers all the fired strips on this entry, which is a give module
 			//probabaly different module, will change, if the latency is different??
 			//maybe need to add the plot for each individual modules  
-      if( keepstrip ){
-					hStripTmean->Fill(tmean);
-					hStripSigmaT->Fill(tsigma);
+			if (keepstrip) {
+				hStripTmean->Fill(tmean);
+				hStripSigmaT->Fill(tsigma);
+				hStripTcorr->Fill(tcorr);
 
-					hStripTcorr->Fill( tcorr );
-	
-      }
-    }
+			}
+		}
 
-		//finish loop on all the strips, next will need to start process all the signals
+		// all the data for one event should have been buffered
+		// this is an test point add by siyu
+//    std::cout<<std::endl<<std::endl<<std::endl;
+//    std::cout<<T->evtID<<std::endl;
+//    for (auto i :modules_hit ){
+//    	std::cout<<__FUNCTION__<<i<<std::endl;
+//    }
+
+	//finish loop on all the strips, next will need to start process all the signals
     //TODO do the conbination in layers instead of modules?
     for( set<int>::iterator ilay=layers_hitX.begin(); ilay != layers_hitX.end(); ++ilay ){
       if( layers_hitY.find( *ilay ) != layers_hitY.end() ){
@@ -2608,259 +2640,317 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
       //map<int,int> N2D_match_layer;
       
-      for(set<int>::iterator imod=modules_hit.begin(); imod != modules_hit.end(); ++imod ){
-	//moduledata_t datatemp;
-	clusterdata_t clusttemp;
-	
-	//for( map<int,int>::iterator jmod=mod_maxstripX.begin(); jmod!=mod_maxstripX.end(); ++jmod ){
-	int module = *imod;    //module ID 
-	int layer = mod_layer[module];
+      for (set<int>::iterator imod = modules_hit.begin(); imod != modules_hit.end(); ++imod) {
+				//moduledata_t datatemp;
+				clusterdata_t clusttemp;
 
-	ModData[module].modindex = module;
-	ModData[module].layerindex = layer;
-	int strip = mod_maxstripX[module];
-	
-	//TODO probably this is not good for 3 time sample situation
-	if( fabs( ModData[module].Tmean_xstrips[strip] - 64.3 ) <= 2.5*16.3 &&
-	    fabs( ModData[module].Tsigma_xstrips[strip] -36.25) <= 2.5*5.7 ){
-	  for( int isamp=0; isamp<nADCsamples; isamp++ ){
-	    
-	    hADCvsSampleMaxStrip->Fill( isamp, ModData[module].ADCsamp_xstrips[strip][isamp] );
-	  }
-	}
-	
-	strip = mod_maxstripY[module];
-	//for( map<int,int>::iterator imod=mod_maxstripY.begin(); imod!=mod_maxstripY.end(); ++imod ){
-	//int module = imod->first;
-	//int strip = imod->second;
-	if( fabs( ModData[module].Tmean_ystrips[strip] - 64.3 ) <= 2.5*16.3 &&
-	    fabs( ModData[module].Tsigma_ystrips[strip] -36.25) <= 2.5*5.7 ){
-	  for( int isamp=0; isamp<nADCsamples; isamp++ ){
-	    hADCvsSampleMaxStrip->Fill( isamp, ModData[module].ADCsamp_ystrips[strip][isamp] );
-	  }
-	}
-	
+				//for( map<int,int>::iterator jmod=mod_maxstripX.begin(); jmod!=mod_maxstripX.end(); ++jmod ){
+				int module = *imod;    //module ID
+				int layer = mod_layer[module];
 
-	//	cout << "starting cluster finding, event " << T->evtID << ", module " << module << ". (nstrip X, nstrip Y) = (" << datatemp.xstrips.size()
-	//    << ", " << datatemp.ystrips.size() << ")" << endl;
-	// continue
-	int clusterflag = find_clusters_by_module( ModData[module], clusttemp );
+				ModData[module].modindex = module;
+				ModData[module].layerindex = layer;
+				int strip = mod_maxstripX[module];
 
-	if( clusterflag != 0 ){
-	  cout << "event " << T->evtID << ", module " << module << " too noisy, gave up" << endl;
-	}
-	
-	// this is an test point add by siyu
-	//check the cluster find efficnecy
-	std::cout<<"----------- Event: "<<T->evtID<<std::endl;
-	std::cout<<"\t===>cluster on X " << clusttemp.nclustx;
-	for(int i = 0; i < clusttemp.nstripx.size();i++){
-		std::cout<<"\t\t Number of stip:"<<clusttemp.nstripx[i]<<
-				"  ("<<clusttemp.ixstriplo[i]<<", "<<clusttemp.ixstriphi[i]<<
-				",  "<< clusttemp.nstripx[i]<<")"<<std::endl;
-	}
-	std::cout<<"\t===>cluster on Y " << clusttemp.nclustx;
-	for(int i = 0; i < clusttemp.nstripy.size();i++){
-		std::cout<<"\t\t Number of stip:"<<clusttemp.nstripy[i]<<
-				"  ("<<clusttemp.iystriplo[i]<<", "<<clusttemp.iystriphi[i]<<
-				",  "<< clusttemp.nstripy[i]<<")"<<std::endl;
-		}
-	getchar();
-	continue;
+				//TODO probably this is not good for 3 time sample situation
+				if (fabs(ModData[module].Tmean_xstrips[strip] - 64.3)
+						<= 2.5 * 16.3
+						&& fabs(ModData[module].Tsigma_xstrips[strip] - 36.25)
+								<= 2.5 * 5.7) {
+					for (int isamp = 0; isamp < nADCsamples; isamp++) {
 
+						hADCvsSampleMaxStrip->Fill(isamp,
+								ModData[module].ADCsamp_xstrips[strip][isamp]);
+					}
+				}
 
+				strip = mod_maxstripY[module];
+				//for( map<int,int>::iterator imod=mod_maxstripY.begin(); imod!=mod_maxstripY.end(); ++imod ){
+				//int module = imod->first;
+				//int strip = imod->second;
+				if (fabs(ModData[module].Tmean_ystrips[strip] - 64.3)
+						<= 2.5 * 16.3
+						&& fabs(ModData[module].Tsigma_ystrips[strip] - 36.25)
+								<= 2.5 * 5.7) {
+					for (int isamp = 0; isamp < nADCsamples; isamp++) {
+						hADCvsSampleMaxStrip->Fill(isamp,
+								ModData[module].ADCsamp_ystrips[strip][isamp]);
+					}
+				}
 
-	//	cout << "ending cluster finding " << endl;
-	
-	mod_clusters[module] = clusttemp;
+				//	cout << "starting cluster finding, event " << T->evtID << ", module " << module << ". (nstrip X, nstrip Y) = (" << datatemp.xstrips.size()
+				//    << ", " << datatemp.ystrips.size() << ")" << endl;
+				// continue
+				int clusterflag = find_clusters_by_module(ModData[module],
+						clusttemp);
 
-	NclustX_layer[mod_layer[module]]+=clusttemp.nclustx;
-	NclustY_layer[mod_layer[module]]+=clusttemp.nclusty;
+				if (clusterflag != 0) {
+					cout << "event " << T->evtID << ", module " << module
+							<< " too noisy, gave up" << endl;
+				}
 
-	Nclust2D_layer[mod_layer[module]]+=clusttemp.nclust2D;
-	
-	for( int iclustx=0; iclustx<clusttemp.nclustx; iclustx++ ){
-	  hclustwidth_x->Fill( clusttemp.nstripx[iclustx] );
-	  hclustADCsum_x->Fill( clusttemp.totalchargex[iclustx] );
-	}
+				// this is an test point add by siyu
+				//check the cluster find efficnecy
+				//it seems like no problem
+				std::cout << "----------- Event: " << T->evtID << std::endl;
+				std::cout << "\t Module" << module << std::endl;
+				std::cout << "\t===>cluster on X " << clusttemp.nclustx;
+				for (int i = 0; i < clusttemp.nstripx.size(); i++) {
+					std::cout << "\t\t Number of stip:" << clusttemp.nstripx[i]
+							<< "  (" << clusttemp.ixstriplo[i] << ", "
+							<< clusttemp.ixstriphi[i] << ",  "
+							<< clusttemp.nstripx[i] << ")" << std::endl;
+				}
+				std::cout << "\t===>cluster on Y " << clusttemp.nclustx;
+				for (int i = 0; i < clusttemp.nstripy.size(); i++) {
+					std::cout << "\t\t Number of stip:" << clusttemp.nstripy[i]
+							<< "  (" << clusttemp.iystriplo[i] << ", "
+							<< clusttemp.iystriphi[i] << ",  "
+							<< clusttemp.nstripy[i] << ")" << std::endl;
+				}
+				//getchar();
+				//need to add the plot to shows the corrected position of each detector
 
-	for( int iclusty=0; iclusty<clusttemp.nclusty; iclusty++ ){
-	  hclustwidth_y->Fill( clusttemp.nstripy[iclusty] );
-	  hclustADCsum_y->Fill( clusttemp.totalchargey[iclusty] );
-	}
+				//	cout << "ending cluster finding " << endl;
 
-	hNclustX_vs_NclustY->Fill( clusttemp.nclusty, clusttemp.nclustx );
-      }
+				mod_clusters[module] = clusttemp;
 
-      int nlayers_with_2Dclust = 0;
-      for( int ilay=0; ilay<nlayers; ilay++ ){
-	if( Nclust2D_layer[ilay] > 0 ) nlayers_with_2Dclust++;
-      }
+				NclustX_layer[mod_layer[module]] += clusttemp.nclustx; // Number of clusters find for given module
+				NclustY_layer[mod_layer[module]] += clusttemp.nclusty;
 
-      hNlayers_2Dclust->Fill( nlayers_with_2Dclust );
-      
-      trackdata_t tracktemp;
+				Nclust2D_layer[mod_layer[module]] += clusttemp.nclust2D; //number of 2D cluster for the layer ???
 
-      tracktemp.ntracks = 0;
+				for (int iclustx = 0; iclustx < clusttemp.nclustx; iclustx++) {
+					hclustwidth_x->Fill(clusttemp.nstripx[iclustx]);
+					hclustADCsum_x->Fill(clusttemp.totalchargex[iclustx]);
+				}
 
-      //      cout << "Finding tracks, event..." << T->evtID << endl;
+				for (int iclusty = 0; iclusty < clusttemp.nclusty; iclusty++) {
+					hclustwidth_y->Fill(clusttemp.nstripy[iclusty]);
+					hclustADCsum_y->Fill(clusttemp.totalchargey[iclusty]);
+				}
+
+				hNclustX_vs_NclustY->Fill(clusttemp.nclusty, clusttemp.nclustx);
+			} // end of find cluter for all modules in single event
+
+			int nlayers_with_2Dclust = 0;
+			for (int ilay = 0; ilay < nlayers; ilay++) {
+				if (Nclust2D_layer[ilay] > 0)
+					nlayers_with_2Dclust++;
+			}
+
+			hNlayers_2Dclust->Fill(nlayers_with_2Dclust);
+
+			trackdata_t tracktemp;
+
+			tracktemp.ntracks = 0;
 
 			//
-      if( nlayers_with_2Dclust >= 3 ){
-      //three hit can  form a track 
-	find_tracks( mod_clusters, tracktemp );
-	
-	//	cout << "track finding successful..." << endl;
-	
-	hNtracks_found->Fill( tracktemp.ntracks );
-	
-	for( int ilay=0; ilay<nlayers; ilay++ ){
-	  Nclustperlayer[ilay] = Nclust2D_layer[ilay];
-	}
+			if (nlayers_with_2Dclust >= 3) { // if the layer > m start to analysis the code
+				//three hit can  form a track
+				find_tracks(mod_clusters, tracktemp);
 
-	Ntracks = tracktemp.ntracks;
-      
-	//for( int itrack=0; itrack<tracktemp.ntracks; itrack++ ){
-	for( int itrack=0; itrack<TMath::Min(tracktemp.ntracks,1); itrack++ ){
-	  hNhitspertrack->Fill( tracktemp.nhitsontrack[itrack] );
-	  hTrackChi2NDF->Fill( tracktemp.Chi2NDFtrack[itrack] );
+				//	cout << "track finding successful..." << endl;
 
-	  if( itrack == 0 ){ 
-	    TrackXp = tracktemp.Xptrack[itrack];
-	    TrackYp = tracktemp.Yptrack[itrack];
-	    TrackX = tracktemp.Xtrack[itrack];
-	    TrackY = tracktemp.Ytrack[itrack];
+				hNtracks_found->Fill(tracktemp.ntracks);
 
-	    TrackNhits = tracktemp.nhitsontrack[itrack];
-	    TrackChi2NDF = tracktemp.Chi2NDFtrack[itrack];
+				for (int ilay = 0; ilay < nlayers; ilay++) {
+					Nclustperlayer[ilay] = Nclust2D_layer[ilay];
+				}
 
-	    for( int ilay=0; ilay<nlayers; ilay++ ){
-	      double xtracktemp = TrackX + zavg_layer[ilay]*TrackXp;
-	      double ytracktemp = TrackY + zavg_layer[ilay]*TrackYp;
+				Ntracks = tracktemp.ntracks;
 
-	      ( (TH2D*) (*hshouldhit_layer)[ilay] )->Fill( ytracktemp, xtracktemp );
-	    }
-	  }
+				//for( int itrack=0; itrack<tracktemp.ntracks; itrack++ ){
+				for (int itrack = 0; itrack < TMath::Min(tracktemp.ntracks, 1);
+						itrack++) {
+					hNhitspertrack->Fill(tracktemp.nhitsontrack[itrack]);
+					hTrackChi2NDF->Fill(tracktemp.Chi2NDFtrack[itrack]);
 
-	  
-	
-	  //Only fill residuals if we have all four layers firing (may help clarify the situation):
-	  //if( tracktemp.nhitsontrack[itrack] == 4 ){
-	  //&& tracktemp.Chi2NDFtrack[itrack] < 1000.0 ){
-	  for( int ihit=0; ihit<tracktemp.nhitsontrack[itrack]; ihit++ ){
-	    int module= tracktemp.modlist_track[itrack][ihit];
-	    int layer = mod_layer[module];
+					if (itrack == 0) {
+						TrackXp = tracktemp.Xptrack[itrack];
+						TrackYp = tracktemp.Yptrack[itrack];
+						TrackX = tracktemp.Xtrack[itrack];
+						TrackY = tracktemp.Ytrack[itrack];
 
-	    int iclust2D = tracktemp.hitlist_track[itrack][ihit];
-	    
-	    //	  if( tracktemp.nhitsontrack[itrack] == 4 && Nclustperlayer[layer] == 1 ){
-	    hTrackXresid_vs_layer->Fill( layer, -tracktemp.residx_hits[itrack][ihit] );
-	    hTrackYresid_vs_layer->Fill( layer, -tracktemp.residy_hits[itrack][ihit] );
-	    
-	    hTrackXresid_vs_module->Fill( module, -tracktemp.residx_hits[itrack][ihit] );
-	    hTrackYresid_vs_module->Fill( module, -tracktemp.residy_hits[itrack][ihit] );
-	    //}
-	    clusterdata_t clusttemp = mod_clusters[module];
-	    //Fill 2D cluster properties histograms IFF they are on tracks:
+						TrackNhits = tracktemp.nhitsontrack[itrack];
+						TrackChi2NDF = tracktemp.Chi2NDFtrack[itrack];
 
-	    //if we have at least 4 hits on the track, then we can compute "exclusive residuals":
-	    
-	    if( tracktemp.nhitsontrack[itrack] > 3 ){
-	      
-	      double sumxhits=0.0,sumyhits=0.0,sumzhits=0.0,sumxzhits=0.0,sumyzhits=0.0,sumz2hits=0.0;
-	      
-	      double xtrtemp,ytrtemp,ztrtemp,xptrtemp,yptrtemp; //temporary storage for track parameters: 
+						for (int ilay = 0; ilay < nlayers; ilay++) {
+							double xtracktemp = TrackX
+									+ zavg_layer[ilay] * TrackXp;
+							double ytracktemp = TrackY
+									+ zavg_layer[ilay] * TrackYp;
 
-	      double varx,vary,varxp,varyp,covxxp,covyyp;
+							((TH2D*) (*hshouldhit_layer)[ilay])->Fill(
+									ytracktemp, xtracktemp);
+						}
+					}
 
-	      //loop over all hits OTHER than ihit, compute sums needed for track fit:
-	      for( int jhit=0; jhit<tracktemp.nhitsontrack[itrack]; jhit++ ){
-		if( jhit != ihit ){
+					//Only fill residuals if we have all four layers firing (may help clarify the situation):
+					//if( tracktemp.nhitsontrack[itrack] == 4 ){
+					//&& tracktemp.Chi2NDFtrack[itrack] < 1000.0 ){
+					for (int ihit = 0; ihit < tracktemp.nhitsontrack[itrack];
+							ihit++) {
+						int module = tracktemp.modlist_track[itrack][ihit];
+						int layer = mod_layer[module];
 
-		  int modj = tracktemp.modlist_track[itrack][jhit];
-		  int layj = mod_layer[modj];
-		  
-		  double xhittemp=mod_clusters[modj].xglobal2D[tracktemp.hitlist_track[itrack][jhit]];
-		  double yhittemp=mod_clusters[modj].yglobal2D[tracktemp.hitlist_track[itrack][jhit]];
-		  double zhittemp=mod_clusters[modj].zglobal2D[tracktemp.hitlist_track[itrack][jhit]];
-		  
-		  sumxhits += xhittemp;
-		  sumyhits += yhittemp;
-		  sumzhits += zhittemp;
-		  sumxzhits += xhittemp*zhittemp;
-		  sumyzhits += yhittemp*zhittemp;
-		  sumz2hits += pow(zhittemp,2);
-		}
-	      }
+						int iclust2D = tracktemp.hitlist_track[itrack][ihit];
 
-	      int nhittemp = tracktemp.nhitsontrack[itrack]-1;
+						//	  if( tracktemp.nhitsontrack[itrack] == 4 && Nclustperlayer[layer] == 1 ){
+						hTrackXresid_vs_layer->Fill(layer,
+								-tracktemp.residx_hits[itrack][ihit]);
+						hTrackYresid_vs_layer->Fill(layer,
+								-tracktemp.residy_hits[itrack][ihit]);
 
-	      double denom = (sumz2hits*nhittemp - pow(sumzhits,2));
-	      xptrtemp = (nhittemp*sumxzhits-sumxhits*sumzhits)/denom;
-	      yptrtemp = (nhittemp*sumyzhits-sumyhits*sumzhits)/denom;
-	      xtrtemp = (sumz2hits*sumxhits-sumzhits*sumxzhits)/denom;
-	      ytrtemp = (sumz2hits*sumyhits-sumzhits*sumyzhits)/denom;
+						hTrackXresid_vs_module->Fill(module,
+								-tracktemp.residx_hits[itrack][ihit]);
+						hTrackYresid_vs_module->Fill(module,
+								-tracktemp.residy_hits[itrack][ihit]);
+						//}
+						clusterdata_t clusttemp = mod_clusters[module];
+						//Fill 2D cluster properties histograms IFF they are on tracks:
 
-	      //now compute track position at layer in local coordinates:
-	      double uhittemp = clusttemp.xclust2Dcorr[iclust2D];
-	      double vhittemp = clusttemp.yclust2Dcorr[iclust2D];
-	      double zhittemp = clusttemp.zglobal2D[iclust2D];
-	      
-	      TVector3 trackpos_global( xtrtemp+xptrtemp*zhittemp, ytrtemp+yptrtemp*zhittemp, zhittemp );
-	      TVector3 modcenter_global( mod_x0[module], mod_y0[module], mod_z0[module] );
-		   
-		    
-	      TVector3 trackpos_local = mod_Rotinv[module]*(trackpos_global - modcenter_global);
+						//if we have at least 4 hits on the track, then we can compute "exclusive residuals":
+						if (tracktemp.nhitsontrack[itrack] > 3) {
 
-	      //Compute the local "u" and "v" coordinates of the track within the module, to allow for the
-	      //possibility of different strip orientations than X/Y:
-	      double utracktemp = trackpos_local.X()*mod_Pxu[module] + trackpos_local.Y()*mod_Pyu[module];
-	      double vtracktemp = trackpos_local.X()*mod_Pxv[module] + trackpos_local.Y()*mod_Pyv[module];
+							double sumxhits = 0.0, sumyhits = 0.0, sumzhits =
+									0.0, sumxzhits = 0.0, sumyzhits = 0.0,
+									sumz2hits = 0.0;
 
-	      tracktemp.eresidx_hits[itrack][ihit] = uhittemp - utracktemp;
-	      tracktemp.eresidy_hits[itrack][ihit] = vhittemp - vtracktemp;
+							double xtrtemp, ytrtemp, ztrtemp, xptrtemp,
+									yptrtemp; //temporary storage for track parameters:
 
-	      hTrackXeresid_vs_layer->Fill( layer, utracktemp - uhittemp );
-	      hTrackYeresid_vs_layer->Fill( layer, vtracktemp - vhittemp );
+							double varx, vary, varxp, varyp, covxxp, covyyp;
 
-	      hTrackXeresid_vs_module->Fill( module, utracktemp - uhittemp );
-	      hTrackYeresid_vs_module->Fill( module, vtracktemp - vhittemp );
-	      
-	    }
-	    
-	  
-	    hClust2D_ADCXvsY->Fill( clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]],
-				    clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]] );
-	    hClust2D_T0XvsY->Fill( clusttemp.txmean[clusttemp.ixclust2D[iclust2D]],
-				   clusttemp.tymean[clusttemp.iyclust2D[iclust2D]] );
-	    hClust2D_ADCdiff->Fill( clusttemp.dEclust2D[iclust2D] );
-	    hClust2D_Tdiff->Fill( clusttemp.dtclust2D[iclust2D] );
-	    hClust2D_ADCasym->Fill( clusttemp.dEclust2D[iclust2D]/(2.0*clusttemp.Eclust2D[iclust2D]) );
-	    hClust2D_ADCasym_vs_ADCavg->Fill( sqrt( clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]]*
-						    clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]] ),
-					      clusttemp.dEclust2D[iclust2D]/(2.0*clusttemp.Eclust2D[iclust2D]) );
-	    hClust2D_ADCdiff_vs_ADCavg->Fill( clusttemp.Eclust2D[iclust2D], clusttemp.dEclust2D[iclust2D] );
-	    
-	    hClust_corr->Fill( clusttemp.CorrCoeff2D[iclust2D] );
-	    hStrip_maxcor->Fill( clusttemp.CorrCoeffMaxStrips[iclust2D] );
-	    
-	    hClust2D_NstripXvsNstripY->Fill( clusttemp.nstripy2D[iclust2D], clusttemp.nstripx2D[iclust2D] );
+							//loop over all hits OTHER than ihit, compute sums needed for track fit:
+							for (int jhit = 0;
+									jhit < tracktemp.nhitsontrack[itrack];
+									jhit++) {
+								if (jhit != ihit) {
 
-	    hADCsumXclust_max->Fill( clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]] );
-	    hADCsumYclust_max->Fill( clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]] );
+									int modj =
+											tracktemp.modlist_track[itrack][jhit];
+									int layj = mod_layer[modj];
 
-	    hADCsumXstrip_max->Fill( ModData[module].ADCsum_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]] );
-	    hADCsumYstrip_max->Fill( ModData[module].ADCsum_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]] );
+									double xhittemp =
+											mod_clusters[modj].xglobal2D[tracktemp.hitlist_track[itrack][jhit]];
+									double yhittemp =
+											mod_clusters[modj].yglobal2D[tracktemp.hitlist_track[itrack][jhit]];
+									double zhittemp =
+											mod_clusters[modj].zglobal2D[tracktemp.hitlist_track[itrack][jhit]];
 
-	    for( int isamp=0; isamp<nADCsamples; isamp++ ){
-	      hADCsampXstrip_max->Fill( isamp, ModData[module].ADCsamp_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]][isamp] );
-	      hADCsampYstrip_max->Fill( isamp, ModData[module].ADCsamp_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]][isamp] );
-	    }
+									sumxhits += xhittemp;
+									sumyhits += yhittemp;
+									sumzhits += zhittemp;
+									sumxzhits += xhittemp * zhittemp;
+									sumyzhits += yhittemp * zhittemp;
+									sumz2hits += pow(zhittemp, 2);
+								}
+							}
+
+							int nhittemp = tracktemp.nhitsontrack[itrack] - 1;
+
+							double denom = (sumz2hits * nhittemp
+									- pow(sumzhits, 2));
+							xptrtemp = (nhittemp * sumxzhits
+									- sumxhits * sumzhits) / denom;
+							yptrtemp = (nhittemp * sumyzhits
+									- sumyhits * sumzhits) / denom;
+							xtrtemp = (sumz2hits * sumxhits
+									- sumzhits * sumxzhits) / denom;
+							ytrtemp = (sumz2hits * sumyhits
+									- sumzhits * sumyzhits) / denom;
+
+							//now compute track position at layer in local coordinates:
+							double uhittemp = clusttemp.xclust2Dcorr[iclust2D];
+							double vhittemp = clusttemp.yclust2Dcorr[iclust2D];
+							double zhittemp = clusttemp.zglobal2D[iclust2D];
+
+							TVector3 trackpos_global(
+									xtrtemp + xptrtemp * zhittemp,
+									ytrtemp + yptrtemp * zhittemp, zhittemp);
+							TVector3 modcenter_global(mod_x0[module],
+									mod_y0[module], mod_z0[module]);
+
+							TVector3 trackpos_local = mod_Rotinv[module]
+									* (trackpos_global - modcenter_global);
+
+							//Compute the local "u" and "v" coordinates of the track within the module, to allow for the
+							//possibility of different strip orientations than X/Y:
+							double utracktemp = trackpos_local.X()
+									* mod_Pxu[module]
+									+ trackpos_local.Y() * mod_Pyu[module];
+							double vtracktemp = trackpos_local.X()
+									* mod_Pxv[module]
+									+ trackpos_local.Y() * mod_Pyv[module];
+
+							tracktemp.eresidx_hits[itrack][ihit] = uhittemp
+									- utracktemp;
+							tracktemp.eresidy_hits[itrack][ihit] = vhittemp
+									- vtracktemp;
+
+							hTrackXeresid_vs_layer->Fill(layer,
+									utracktemp - uhittemp);
+							hTrackYeresid_vs_layer->Fill(layer,
+									vtracktemp - vhittemp);
+
+							hTrackXeresid_vs_module->Fill(module,
+									utracktemp - uhittemp);
+							hTrackYeresid_vs_module->Fill(module,
+									vtracktemp - vhittemp);
+
+						}
+
+						hClust2D_ADCXvsY->Fill(
+								clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]],
+								clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]]);
+						hClust2D_T0XvsY->Fill(
+								clusttemp.txmean[clusttemp.ixclust2D[iclust2D]],
+								clusttemp.tymean[clusttemp.iyclust2D[iclust2D]]);
+						hClust2D_ADCdiff->Fill(clusttemp.dEclust2D[iclust2D]);
+						hClust2D_Tdiff->Fill(clusttemp.dtclust2D[iclust2D]);
+						hClust2D_ADCasym->Fill(
+								clusttemp.dEclust2D[iclust2D]
+										/ (2.0 * clusttemp.Eclust2D[iclust2D]));
+						hClust2D_ADCasym_vs_ADCavg->Fill(
+								sqrt(
+										clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]]
+												* clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]]),
+								clusttemp.dEclust2D[iclust2D]
+										/ (2.0 * clusttemp.Eclust2D[iclust2D]));
+						hClust2D_ADCdiff_vs_ADCavg->Fill(
+								clusttemp.Eclust2D[iclust2D],
+								clusttemp.dEclust2D[iclust2D]);
+
+						hClust_corr->Fill(clusttemp.CorrCoeff2D[iclust2D]);
+						hStrip_maxcor->Fill(
+								clusttemp.CorrCoeffMaxStrips[iclust2D]);
+
+						hClust2D_NstripXvsNstripY->Fill(
+								clusttemp.nstripy2D[iclust2D],
+								clusttemp.nstripx2D[iclust2D]);
+
+						hADCsumXclust_max->Fill(
+								clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]]);
+						hADCsumYclust_max->Fill(
+								clusttemp.totalchargey[clusttemp.iyclust2D[iclust2D]]);
+
+						hADCsumXstrip_max->Fill(
+								ModData[module].ADCsum_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]]);
+						hADCsumYstrip_max->Fill(
+								ModData[module].ADCsum_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]]);
+
+						for (int isamp = 0; isamp < nADCsamples; isamp++) {
+							hADCsampXstrip_max->Fill(isamp,
+									ModData[module].ADCsamp_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]][isamp]);
+							hADCsampYstrip_max->Fill(isamp,
+									ModData[module].ADCsamp_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]][isamp]);
+						}
 
 	    hADCsampmax_Xstrip->Fill( ModData[module].ADCsamp_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]][ModData[module].isampmax_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]]] );
 	    hADCsampmax_Ystrip->Fill( ModData[module].ADCsamp_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]][ModData[module].isampmax_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]]] );
 
-	    hADCprodXYstrip_max->Fill( sqrt( ModData[module].ADCsum_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]] * 
+	    hADCprodXYstrip_max->Fill( sqrt( ModData[module].ADCsum_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]] *
 					     ModData[module].ADCsum_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]] ) );
 	    hADCprodXYsamp_max->Fill( sqrt( ModData[module].ADCsamp_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]][ModData[module].isampmax_xstrips[clusttemp.ixstripmax[clusttemp.ixclust2D[iclust2D]]]] *
 					    ModData[module].ADCsamp_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]][ModData[module].isampmax_ystrips[clusttemp.iystripmax[clusttemp.iyclust2D[iclust2D]]]] ) );
@@ -2876,7 +2966,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		hStrip_dTwalkcor->Fill( ModData[module].Tmean_xstrips_walkcor[ixstrip] - clusttemp.tclust2Dwalkcorr[iclust2D] );
 		hStrip_dTwalkcor_vs_ADC->Fill( ModData[module].ADCsum_xstrips[ixstrip], ModData[module].Tmean_xstrips_walkcor[ixstrip] - clusttemp.tclust2Dwalkcorr[iclust2D] );
-		
+
 	      }
 	    }
 
@@ -2890,12 +2980,12 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		hStrip_dTwalkcor_vs_ADC->Fill( ModData[module].ADCsum_ystrips[iystrip], ModData[module].Tmean_ystrips_walkcor[iystrip] - clusttemp.tclust2Dwalkcorr[iclust2D] );
 	      }
 	    }
-	    
+
 	    if( itrack == 0 ){ //set tree output variables:
 
 	      HitModule[ihit] = module;
 	      HitLayer[ihit] = layer;
-	    
+
 	      HitXlocal[ihit] = clusttemp.xclust2Dcorr[iclust2D];
 	      HitYlocal[ihit] = clusttemp.yclust2Dcorr[iclust2D];
 	      HitXresid[ihit] = tracktemp.residx_hits[itrack][ihit];
@@ -2919,16 +3009,16 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	      TVector3 hitpos_global( clusttemp.xglobal2D[iclust2D],
 				      clusttemp.yglobal2D[iclust2D],
 				      clusttemp.zglobal2D[iclust2D] );
-	      
+
 	      HitXglobal[ihit] = hitpos_global.X();
 	      HitYglobal[ihit] = hitpos_global.Y();
 	      HitZglobal[ihit] = hitpos_global.Z();
 
 	      HitXmom[ihit] = clusttemp.xmom2D[iclust2D];
 	      HitYmom[ihit] = clusttemp.ymom2D[iclust2D];
-	      
+
 	      //if there IS a hit: fill "did hit" histos with TRACK coordinates, not hit coordinates, to avoid bin migration effects:
-	      
+
 	      //( (TH2D*) (*hdidhit_layer)[layer] )->Fill( HitYglobal[ihit], HitXglobal[ihit] );
 
 	      //Need to fill this with identical coordinates to how "should hit" is done to avoid bin migration effects:
@@ -2936,7 +3026,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 							TrackX + zavg_layer[layer]*TrackXp );
 
 	      ( (TH2D*) (*hxyhit_layer)[layer] )->Fill( HitYglobal[ihit], HitXglobal[ihit] );
-	      
+
 	      HitSigX[ihit] = clusttemp.xsigma[clusttemp.ixclust2D[iclust2D]];
 	      HitSigY[ihit] = clusttemp.ysigma[clusttemp.iyclust2D[iclust2D]];
 	      HitADCX[ihit] = clusttemp.totalchargex[clusttemp.ixclust2D[iclust2D]];
@@ -2951,10 +3041,10 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	      hClust2D_Xmom_vs_NstripX->Fill( HitNstripX[ihit], HitXmom[ihit] );
 	      hClust2D_Ymom_vs_NstripY->Fill( HitNstripY[ihit], HitYmom[ihit] );
-					    
+
 	    }
 	  }
-      
+
 
 	  hTrackXY->Fill( tracktemp.Ytrack[itrack],tracktemp.Xtrack[itrack] );
 	  hTrackXp->Fill( tracktemp.Xptrack[itrack] );
@@ -2965,13 +3055,13 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       if( tracktemp.ntracks > 0 ){
 	Tout->Fill();
       }
-      
+
       if( eventdisplaymode != 0 ){
 
 	TLine Ltemp;
 
 	Ltemp.SetLineWidth(1);
-	
+
 	double stripADCmax=1.2e4;
 	int ncolors = gStyle->GetNumberOfColors();
 
@@ -2980,19 +3070,19 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	  ( (TH2D*) (*hframe_layers)[ilayer] )->Draw();
 	}
-	
+
 	for( set<int>::iterator imod=modules_hit.begin(); imod != modules_hit.end(); ++imod ){
-	  
+
 	  int layer = mod_layer[*imod];
 	  int module = *imod;
 
 	  set<int> xstrips = ModData[module].xstrips;
 	  set<int> ystrips = ModData[module].ystrips;
-	  
+
 	  c1->cd(layer+1);
-	  
+
 	  //clusterdata_t clusttemp = mod_clusters[module];
-	  
+
 	  for( set<int>::iterator istrip=xstrips.begin(); istrip != xstrips.end(); ++istrip ){
 	    int strip = *istrip;
 	    //int binx = strip + 1280*( module % 3 );
@@ -3007,9 +3097,9 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	    //Unit vector perp. to U; i.e., ALONG strip:
 	    TVector3 uperphat = zaxis.Cross(uhat).Unit();
-	    
+
 	    TVector3 strip_center_pos = ulocal*uhat;
-	    
+
 	    if( fabs( strip_center_pos.X() ) <= mod_Lx[module]/2.0 &&
 		fabs( strip_center_pos.Y() ) <= mod_Ly[module]/2.0 ){
 	      //Then we can draw this strip:
@@ -3020,7 +3110,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		double ymin_strip = -mod_Ly[module]/2.0;
 		double ymax_strip = mod_Ly[module]/2.0;
-		
+
 		xmin_strip = (xmin_strip < -mod_Lx[module]/2.0) ? -mod_Lx[module]/2.0 : xmin_strip;
 		xmax_strip = (xmax_strip > mod_Lx[module]/2.0) ? mod_Lx[module]/2.0 : xmax_strip;
 
@@ -3042,11 +3132,11 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		//cout << "logADCmin, ADC, logADCbin = " << logADCmin << ", " << ADCsum_xstrips[module][strip] << ", " << logADCbin << ", color = " << gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,logADCbin))) << endl;
 		int ADCbin = int( (ModData[module].ADCsum_xstrips[strip]-thresh_stripsum)/(stripADCmax-thresh_stripsum)*double(ncolors) );
-		
+
 		Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,ADCbin))));
 
 		Ltemp.DrawLine( point1global.Y(), point1global.X(), point2global.Y(), point2global.X() );
-		
+
 	      } else { //strip IS along Y:
 		double xmax_strip = strip_center_pos.X();
 		double xmin_strip = strip_center_pos.X();
@@ -3063,23 +3153,23 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		//How to implement a logarithmic color scale: ADCstrip over ADCmax varies from threshold/max up to 1:
 		double logADCmin = log(thresh_stripsum/stripADCmax);
 		double logADCmax = 0.0;
-		
+
 		int logADCbin = int( (log(ModData[module].ADCsum_xstrips[strip]/stripADCmax)-logADCmin)/(logADCmax-logADCmin)*double(ncolors) );
 
 		//cout << "logADCmin, ADC, logADCbin = " << logADCmin << ", " << ADCsum_xstrips[module][strip] << ", " << logADCbin << ", color = " << gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,logADCbin))) << endl;
 		int ADCbin = int( (ModData[module].ADCsum_xstrips[strip]-thresh_stripsum)/(stripADCmax-thresh_stripsum)*double(ncolors) );
-		
+
 		Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,ADCbin))));
-		
-	    
+
+
 
 		Ltemp.DrawLine( point1global.Y(), point1global.X(), point2global.Y(), point2global.X() );
 	      }
-	      
+
 	    }
-	    
+
 	  }
-	    
+
 	  for( set<int>::iterator istrip=ystrips.begin(); istrip != ystrips.end(); ++istrip ){
 	    int strip = *istrip;
 	    //int binx = strip + 1280*( module % 3 );
@@ -3094,9 +3184,9 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	    //Unit vector perp. to U; i.e., ALONG strip:
 	    TVector3 vperphat = zaxis.Cross(vhat).Unit();
-	    
+
 	    TVector3 strip_center_pos = vlocal*vhat;
-	    
+
 	    if( fabs( strip_center_pos.X() ) <= mod_Lx[module]/2.0 &&
 		fabs( strip_center_pos.Y() ) <= mod_Ly[module]/2.0 ){
 	      //Then we can draw this strip:
@@ -3108,7 +3198,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		double ymin_strip = -mod_Ly[module]/2.0;
 		double ymax_strip = mod_Ly[module]/2.0;
-		
+
 		xmin_strip = (xmin_strip < -mod_Lx[module]/2.0) ? -mod_Lx[module]/2.0 : xmin_strip;
 		xmax_strip = (xmax_strip > mod_Lx[module]/2.0) ? mod_Lx[module]/2.0 : xmax_strip;
 
@@ -3131,13 +3221,13 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		//cout << "logADCmin, ADC, logADCbin = " << logADCmin << ", " << ADCsum_ystrips[module][strip] << ", " << logADCbin << ", color = " << gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,logADCbin))) << endl;
 		int ADCbin = int( (ModData[module].ADCsum_ystrips[strip]-thresh_stripsum)/(stripADCmax-thresh_stripsum)*double(ncolors) );
-		
+
 		Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,ADCbin))));
-		
+
 		//Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,TMath::Nint(ADCsum_xstrips[module][strip]/stripADCmax*(ncolors-1))))));
 
 		Ltemp.DrawLine( point1global.Y(), point1global.X(), point2global.Y(), point2global.X() );
-		
+
 	      } else { //strip IS along Y:
 		double xmax_strip = strip_center_pos.X();
 		double xmin_strip = strip_center_pos.X();
@@ -3159,16 +3249,16 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 		//	cout << "logADCmin, ADC, logADCbin = " << logADCmin << ", " << ADCsum_ystrips[module][strip] << ", " << logADCbin << ", color = " << gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,logADCbin))) << endl;
 		int ADCbin = int( (ModData[module].ADCsum_ystrips[strip]-thresh_stripsum)/(stripADCmax-thresh_stripsum)*double(ncolors) );
-		
+
 		Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,ADCbin))));
-		
+
 		//Ltemp.SetLineColor( gStyle->GetColorPalette( TMath::Max(0,TMath::Min(ncolors-1,TMath::Nint(ADCsum_xstrips[module][strip]/stripADCmax*(ncolors-1))))));
 
 		Ltemp.DrawLine( point1global.Y(), point1global.X(), point2global.Y(), point2global.X() );
 	      }
-	      
+
 	    }
-	    
+
 	  }
 	}
 	// hframe1->SetMinimum(0);
@@ -3180,7 +3270,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	// hframe2->SetMaximum(20000);
 	// hframe3->SetMaximum(20000);
 	// hframe4->SetMaximum(20000);
-	
+
 	// c1->SetGrid();
 	// c1->cd(1)->Clear();
 	// hframe1->Draw("colz");
@@ -3203,7 +3293,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	TMarker Mhit;
 	TMarker Mtrack;
 	//	TMarker Mhit_notrack;
-	
+
 	Mhit.SetMarkerStyle(5);
 	Mhit.SetMarkerSize(3.0);
 	Mhit.SetMarkerColor(6);
@@ -3215,7 +3305,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 	int mstyle_track[] = {45, 44, 43, 42, 49, 34, 28, 41};
 	int mcolor_track[] = {1,2,3,4,5,6,7,8};
-	
+
 	for( set<int>::iterator imod=modules_hit.begin(); imod != modules_hit.end(); ++imod ){
 	  //clusterdata_t clusttemp = mod_clusters[*imod];
 	  int module = *imod;
@@ -3223,13 +3313,13 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  clusterdata_t clusttemp = mod_clusters[module];
 
 	  for( int iclust=0; iclust<clusttemp.nclust2D; iclust++ ){
-	    
+
 
 	    //local hit position:
 	    double xhit = clusttemp.xglobal2D[iclust];
 	    double yhit = clusttemp.yglobal2D[iclust];
-	    
-	    
+
+
 
 	    c1->cd(layer+1);
 
@@ -3241,7 +3331,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	    c1->Update();
 	  }
 	}
-	
+
 	if( tracktemp.ntracks > 0 && tracktemp.ntracks<9){ //Draw track information for each layer:
 	  for( int itrack=0; itrack<tracktemp.ntracks; itrack++ ){
 	    for( int ihit=0; ihit<tracktemp.nhitsontrack[itrack]; ihit++ ){
@@ -3249,10 +3339,10 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	      int layer=mod_layer[module];
 
 	      int iclust = tracktemp.hitlist_track[itrack][ihit];
-	      
+
 	      clusterdata_t clusttemp = mod_clusters[module];
 
-	      
+
 	      TVector3 hitpos_global(clusttemp.xglobal2D[iclust],clusttemp.yglobal2D[iclust],clusttemp.zglobal2D[iclust]);
 
 	      //track position at module:
@@ -3260,8 +3350,8 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	      double ytrack = tracktemp.Ytrack[itrack]+tracktemp.Yptrack[itrack]*hitpos_global.Z();
 
 	      TVector3 trackpos_global( xtrack, ytrack, hitpos_global.Z() );
-	     
-	      
+
+
 	      c1->cd(layer+1);
 
 	      // Mhit.DrawMarker( yhit_local_stripcoord, xhit_local_stripcoord+nstripsx*(module%3) );
@@ -3271,16 +3361,16 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	      Mtrack.DrawMarker( ytrack, xtrack );
 	      //Mhit.Draw("SAME");
 	      //Mtrack.Draw("SAME");
-		  
+
 	      gPad->Modified();
 	      gPad->Update();
 	      //gSystem->ProcessEvents();
 	      c1->Update();
-	      
-	      
+
+
 	    }
 	  }
-	  
+
 	}
 	gSystem->ProcessEvents();
 
@@ -3289,17 +3379,17 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	reply.ReadLine(cin,kFALSE);
 
 	if( reply.BeginsWith("q") ) break;
-	
+
       }
-	  
-	  
+
+
       //gSystem->Sleep(2500);
 
       //	  c1->Update();
-	  
-	  
+
+
     }
-  
+
 
     for( int ilayer=0; ilayer<nlayers; ilayer++ ){
       // if( NstripX_layer[ilayer] > 0 ){
@@ -3310,18 +3400,18 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	//}
     }
 
-    
-      
+
+
 
     // if( eventdisplaymode != 0 ){
 
-      
+
     // }
-  }
+  } // end of while loop?
 
   //form efficiency histograms:
   TClonesArray *heff_layer = new TClonesArray("TH2D",nlayers);
-  
+
   for( int ilay=0; ilay<nlayers; ilay++ ){
     TString histname;
 
@@ -3330,15 +3420,15 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
     ( (TH2D*) (*heff_layer)[ilay] )->SetName( histname.Format( "heff_layer%d", ilay ) );
     ( (TH2D*) (*heff_layer)[ilay] )->SetTitle( histname.Format( "Track-based efficiency, layer %d", ilay ) );
-    
+
     ( (TH2D*) (*heff_layer)[ilay] )->Divide( (TH2D*) (*hshouldhit_layer)[ilay] );
-  }	 
-  
+  }
+
   //  hframe_layers->Delete();
 
   fout->Write();
-  
-  
+
+
 }
 
 

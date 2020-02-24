@@ -48,7 +48,7 @@ int GEM_rawView(const char* filename, int evtID=0){
 			for (int element =0; element < striphX[i]->GetNbinsX();element++){
 				if(striphX[i]->GetBinContent(element)!=0){
 				std::cout<<(element)<<", ";
-				stripsXstr+=Form("%d  ",element);}
+				stripsXstr+=Form("%d  ",element-1);}
 			}
 			std::cout<<std::endl;
 			// plot the seached first strips
@@ -73,7 +73,7 @@ int GEM_rawView(const char* filename, int evtID=0){
 					element++) {
 				if (striphY[i]->GetBinContent(element) != 0){
 					std::cout << (element) << ", ";
-				stripsYstr+=Form("%d  ",element);}
+				stripsYstr+=Form("%d  ",element-1);}
 			}
 			std::cout << std::endl;
 			// plot the seached first strips
