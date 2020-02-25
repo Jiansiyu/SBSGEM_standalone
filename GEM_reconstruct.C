@@ -1105,14 +1105,10 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
     
     //check piont added by siyu
     // check whether it keep the reasonable clusters
-    std::cout<<"**********"<<__FUNCTION__<<"****** check prune"<<std::endl;
-    auto clusttemp=mod_clusters[module];
-    clusttemp.PrintCluster2D();
-    getchar();
-    continue;
-
-
-
+    // std::cout<<"**********"<<__FUNCTION__<<"****** check prune"<<std::endl;
+    // auto clusttemp=mod_clusters[module];
+    // clusttemp.PrintCluster2D();
+    
 
     if( mod_clusters[module].nclust2D > 0 ){
       for( int iclust=0; iclust<mod_clusters[module].nclust2D; iclust++ ){
@@ -1121,7 +1117,6 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 
 	// double corrcoeff = mod_clusters[module].CorrCoeff2D[iclust];
 
-	
 	// if( fabs( ADCasym ) < cluster2Dmatch_asymcut && fabs( Tdiff ) < cluster2Dmatch_tcut &&
 	//     fabs(mod_clusters[module].dEclust2D[iclust])<1000.0 && mod_clusters[module].nstripx2D[iclust]<=5 &&
 	//     mod_clusters[module].nstripy2D[iclust]<=5 ){ // GOOD match:
@@ -1137,17 +1132,15 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	  
 	  N2Dhits_layer[layer] = modindexhit2D[layer].size();
 	}  
-	
       }
     }
   }
 
-  //
+  //do we need to require n-1 modules
   if( layers_2Dmatch.size() >= minLayerTrack ){
     //trackdata_t trackdatatemp;
-
     trackdata.ntracks = 0;
-    
+
     bool foundtrack=true;
     while( foundtrack ){ //consider all possible combinations of one (2D matched) hit per layer:
       // This "brute force" approach will work reasonably well for cosmic data, but we'll need to be smarter when dealing with real data
@@ -1157,7 +1150,7 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 
       int nhitsrequired=layers_2Dmatch.size(); //on first iteration, require nhits = total number of layers with unused hits:
 
-      while( nhitsrequired >= 3 ){ //first iteration: determine number of layers with (unused) hits, populate lists of unused hits, count number of combinations,
+      while( nhitsrequired >= minLayerTrack ){ //first iteration: determine number of layers with (unused) hits, populate lists of unused hits, count number of combinations,
 	//etc:
 	
 	foundtrack = false;
@@ -1165,6 +1158,8 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	//here we populate the lists of free hits by layer: if we found a track on the previous iteration, some hits will have been marked as used
 	//if we didn't find a track, then no hits will have been marked as used, but the number of hits required to
 	//make a track will have been decremented:
+	//
+	
 	long ncombosremaining=1;
 
 	map<int,int> Nfreehits_layer; //free hit count mapped by layer
