@@ -2814,7 +2814,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
 
 		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
-			  std::cout<<"Fill position in the Histogram "<< modulecluster->second.nclust2D<<std::endl;
+			  std::cout<<"Fill position in the Histogram Module"<<modulecluster->first<<"  number"<< modulecluster->second.nclust2D<<std::endl;
 		  clusterXZ2D->Fill(modulecluster->second.xglobal2D[i],modulecluster->second.zglobal2D[i]);
 		  clusterYZ2D->Fill(modulecluster->second.yglobal2D[i],modulecluster->second.zglobal2D[i]);
 	  }
