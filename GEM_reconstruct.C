@@ -2790,7 +2790,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 			tracktemp.ntracks = 0;
 
-				  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
+	  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
 	  if(!checkCanvas){
 		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
 	  }else{
@@ -2814,6 +2814,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
 
 		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
+			  std::cout<<"Fill position in the Histogram "<< modulecluster->second.nclust2D<<std::endl;
 		  clusterXZ2D->Fill(modulecluster->second.xglobal2D[i],modulecluster->second.zglobal2D[i]);
 		  clusterYZ2D->Fill(modulecluster->second.yglobal2D[i],modulecluster->second.zglobal2D[i]);
 	  }
