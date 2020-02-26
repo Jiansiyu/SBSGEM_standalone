@@ -36,9 +36,6 @@
 
 using namespace std;
 
-TH1F * CheckresidualX[6];
-TH1F * CheckresidualY[6];
-
 //#include "TApplication.h"
 
 //TODO: don't hard-code the number of APV25 samples. But for this we need a better decoded hit format anyway
@@ -590,7 +587,7 @@ int find_clusters_by_module(moduledata_t mod_data, clusterdata_t &clust_data) {
 
 		//    if( ixmax >= 0 && maxADCXY >= thresh_stripsum ){ //local maximum established:
 		if (ixmax >= 0) { // find effective corr strips
-			      cout <<__FUNCTION__<<"("<<__LINE__<<"):"<< "found local maximum, (ixmax, iymax, maxcor)=(" << ixmax << ", " << iymax << ", " << maxcor << ")" << endl;
+//			      cout <<__FUNCTION__<<"("<<__LINE__<<"):"<< "found local maximum, (ixmax, iymax, maxcor)=(" << ixmax << ", " << iymax << ", " << maxcor << ")" << endl;
 			//     cout << "found local maximum, (ixmax,iymax,pixelmax)=(" << ixmax << ", " << iymax << ", " << pixelmax << ")" << endl;
 			//    if( ixmax >= 0 && maxcor >= maxstripcorthreshold ){ //start a new cluster:
 
@@ -759,8 +756,8 @@ int find_clusters_by_module(moduledata_t mod_data, clusterdata_t &clust_data) {
 	ihit++;
 			}
 
-      cout << "finished adding strips to cluster, (nclust, nstripx,nstripy)=(" << nclust << ", " << xstriplistclust.size() << ", "
-      << ystriplistclust.size() << ")" << endl;
+//      cout << "finished adding strips to cluster, (nclust, nstripx,nstripy)=(" << nclust << ", " << xstriplistclust.size() << ", "
+//      << ystriplistclust.size() << ")" << endl;
       
       //here we have a cluster: compute cluster properties and add it to the arrays:
 
@@ -1434,9 +1431,9 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 
 		  double drproj2 = dxproj2 + dyproj2;
 		  
-		  //cout << "nhits = " << nhits << ", x projection uncertainty = " << sqrt(dxproj2) << ", y projection uncertainty = " << sqrt(dyproj2)
-		  //     << endl;
-		  //max. residual corresponding to max. chi2 cut = chi^2 = maxresid^2/sigma^2 --> maxresid = sigma * sqrt(TrackChi2Cut)
+//		  cout << "nhits = " << nhits << ", x projection uncertainty = " << sqrt(dxproj2) << ", y projection uncertainty = " << sqrt(dyproj2)
+//		       << endl;
+//		  //max. residual corresponding to max. chi2 cut = chi^2 = maxresid^2/sigma^2 --> maxresid = sigma * sqrt(TrackChi2Cut)
 		  
 		  if( r2track < pow(TrackFindingMaxRadius,2) ){ //This hit falls within plausible range for track (user-configurable radius):
 		    
@@ -1538,12 +1535,13 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 		}
 		
 		ngoodcombos++;
-		std::cout<<"Number of good track ::"<< ngoodcombos<<std::endl;
-		getchar();
+//		std::cout<<"Number of good track ::"<< ngoodcombos<<std::endl;
+//		getchar();
 		
 	      } //if (nhits > nhitsrequired)
 	    } //while (nextcomboexists): end loop over all possible hit combos for current value of nhitsrequired:
 	  } //end loop over all possible combinations of nhitsrequired layers:  
+
 	  if( ngoodcombos > 0 && bestchi2 < TrackChi2Cut ){ //add track to global track arrays and mark hits as used:
 	    foundtrack = true;
 	    trackdata.nhitsontrack.push_back( nhitbestcombo );
@@ -1629,17 +1627,6 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 }
 
 void GEM_reconstruct( const char *filename, const char *configfilename, const char *outfilename="temp.root" ){
-TCanvas *residPlotCanv=new TCanvas("check resi","check resi", 1000,1000);
-residPlotCanv->Divide(2,3);
-
-CheckresidualX[3]= new TH1F("residual_Modulex3","residual_Modulex3",600,-150,150);
-CheckresidualX[4]= new TH1F("residual_Modulex4","residual_Modulex4",600,-150,150);
-CheckresidualX[5]= new TH1F("residual_Modulex5","residual_Modulex5",600,-150,150);
-
-CheckresidualY[3]= new TH1F("residual_ModuleY3","residual_ModuleY3",600,-150,150);
-CheckresidualY[4]= new TH1F("residual_ModuleY4","residual_ModuleY4",600,-150,150);
-CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150);
-
   // ? what this used for
   //Initialize walk correction parameters:
   double walkcor_mean_params[3] = {walkcor_mean_const, walkcor_mean_ADC0, walkcor_mean_exp};
@@ -2751,22 +2738,22 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150
 				// this is an test point add by siyu
 				//check the cluster find efficnecy
 				//it seems like no problem
-				std::cout << "----------- Event: " << T->evtID << std::endl;
-				std::cout << "\t Module" << module << std::endl;
-				std::cout << "\t===>cluster on X " << clusttemp.nclustx;
-				for (int i = 0; i < clusttemp.nstripx.size(); i++) {
-					std::cout << "\t\t Number of stip:" << clusttemp.nstripx[i]
-							<< "  (" << clusttemp.ixstriplo[i] << ", "
-							<< clusttemp.ixstriphi[i] << ",  "
-							<< clusttemp.nstripx[i] << ")" << std::endl;
-				}
-				std::cout << "\t===>cluster on Y " << clusttemp.nclustx;
-				for (int i = 0; i < clusttemp.nstripy.size(); i++) {
-					std::cout << "\t\t Number of stip:" << clusttemp.nstripy[i]
-							<< "  (" << clusttemp.iystriplo[i] << ", "
-							<< clusttemp.iystriphi[i] << ",  "
-							<< clusttemp.nstripy[i] << ")" << std::endl;
-				}
+//				std::cout << "----------- Event: " << T->evtID << std::endl;
+//				std::cout << "\t Module" << module << std::endl;
+//				std::cout << "\t===>cluster on X " << clusttemp.nclustx;
+//				for (int i = 0; i < clusttemp.nstripx.size(); i++) {
+//					std::cout << "\t\t Number of stip:" << clusttemp.nstripx[i]
+//							<< "  (" << clusttemp.ixstriplo[i] << ", "
+//							<< clusttemp.ixstriphi[i] << ",  "
+//							<< clusttemp.nstripx[i] << ")" << std::endl;
+//				}
+//				std::cout << "\t===>cluster on Y " << clusttemp.nclustx;
+//				for (int i = 0; i < clusttemp.nstripy.size(); i++) {
+//					std::cout << "\t\t Number of stip:" << clusttemp.nstripy[i]
+//							<< "  (" << clusttemp.iystriplo[i] << ", "
+//							<< clusttemp.iystriphi[i] << ",  "
+//							<< clusttemp.nstripy[i] << ")" << std::endl;
+//				}
 				
 				//getchar();
 				//need to add the plot to shows the corrected position of each detector
@@ -2805,138 +2792,6 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150
 
 			tracktemp.ntracks = 0;
 
-	  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
-	  if(!checkCanvas){
-		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
-	  }else{
-		  checkCanvas->Clear();
-		  checkCanvas->Divide(2,2);
-	  }
-	  checkCanvas->Draw();
-	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
-	  if(!clusterXZ2D){
-		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }
-		  clusterXZ2D->Clear();
-		  clusterXZ2D->SetMarkerStyle(20);
-		  clusterXZ2D->SetMarkerSize(1);
-	  
-	  	  TH2F *clusterXZ2DFit=(TH2F*)gROOT->FindObject("x_z_clusterfit");
-	  if(!clusterXZ2DFit){
-		  clusterXZ2DFit=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }
-		  clusterXZ2DFit->Clear();
-		  clusterXZ2DFit->SetMarkerStyle(20);
-		  clusterXZ2DFit->SetMarkerSize(1);
-
-	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
-	  if(!clusterYZ2D){
-		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }
-		  clusterYZ2D->Clear();
-		  clusterYZ2D->SetMarkerStyle(20);
-		  clusterYZ2D->SetMarkerSize(1);
-	  
-	  TH2F *clusterYZ2DFit=(TH2F*)gROOT->FindObject("x_z_clusterfit");
-	  if(!clusterYZ2DFit){
-		  	clusterYZ2DFit=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }
-		  clusterYZ2DFit->Clear();
-		  clusterYZ2DFit->SetMarkerStyle(20);
-		  clusterYZ2DFit->SetMarkerSize(1);
-
-	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
-
-		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
-			  std::cout<<"Fill position in the Histogram Module"<<modulecluster->first<<"  number"<< modulecluster->second.nclust2D<<std::endl;
-		  clusterXZ2D->Fill(modulecluster->second.xglobal2D[i],modulecluster->second.zglobal2D[i]);
-		  clusterYZ2D->Fill(modulecluster->second.yglobal2D[i],modulecluster->second.zglobal2D[i]);
-	  }
-
-	  if(mod_clusters.find(0)!=mod_clusters.end()&&
-	  mod_clusters.find(1)!=mod_clusters.end()&&
-	  mod_clusters.find(2)!=mod_clusters.end()&&
-	  mod_clusters[0].nclust2D==1&&
-	  mod_clusters[2].nclust2D==1&&
-	  mod_clusters[1].nclust2D==1
-	  ){
-		  for (int module=0; module<3; module++){
-			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
-				  clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
-				  clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
-			  }
-		  }
-	  }
-
-	  }
-	  checkCanvas->cd(1);
-	  clusterXZ2D->Draw();
-	  clusterXZ2DFit->Draw("same");
-	  clusterXZ2DFit->Fit("pol1");
-
-	  double xp0,xp1,yp0,yp1;
-	  if(mod_clusters.find(0)!=mod_clusters.end()&&
-	  mod_clusters.find(1)!=mod_clusters.end()&&
-	  mod_clusters.find(2)!=mod_clusters.end()&&
-	  mod_clusters[0].nclust2D==1&&
-	  mod_clusters[2].nclust2D==1&&
-	  mod_clusters[1].nclust2D==1
-	  ){
-	   xp0=clusterXZ2DFit->GetFunction("pol1")->GetParameter(0);
-	   xp1=clusterXZ2DFit->GetFunction("pol1")->GetParameter(1);
-      std::cout<<xp0<<"  "<< xp1<<std::endl;
-	  }
-	  checkCanvas->cd(2);
-	  clusterYZ2D->Draw();
-	  clusterYZ2DFit->Draw("same");
-	  clusterYZ2DFit->Fit("pol1");
-
-	  if(mod_clusters.find(0)!=mod_clusters.end()&&
-	  mod_clusters.find(1)!=mod_clusters.end()&&
-	  mod_clusters.find(2)!=mod_clusters.end()&&
-	  mod_clusters[0].nclust2D==1&&
-	  mod_clusters[2].nclust2D==1&&
-	  mod_clusters[1].nclust2D==1
-	  ){
-	   yp0=clusterYZ2DFit->GetFunction("pol1")->GetParameter(0);
-	   yp1=clusterYZ2DFit->GetFunction("pol1")->GetParameter(1);
-	  
-	  //get the residual
-	  for (int module=3; module<6; module++){
-			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
-				  std::cout<<"Correction on X ="<<(mod_clusters[module].zglobal2D[i]-xp0)/xp1<<"  y: "<<(mod_clusters[module].zglobal2D[i]-yp0)/yp1<<std::endl;
-				  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
-				  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
-				  residPlotCanv->cd(2* module-6+1);
-				  
-
-				  CheckresidualX[module]->Draw("Hist");
-				//   CheckresidualX[module]->Fit("gaus");
-				//   TLatex *t2=new TLatex(0,0, Form("%f",CheckresidualX[module]->GetFunction("gaus")->GetParameter(1)));
-				//   t2->SetTextSize(0.1);
-				// 	t2->SetTextAlign(12);
-				// 	t2->SetTextColor(2);
-				// 	t2->Draw("same");
- 				  residPlotCanv->cd(2* module-6+2);
-				  CheckresidualY[module]->Draw("Hist");
-				//   CheckresidualY[module]->Fit("gaus");
-				//   TLatex *t1=new TLatex(0,0, Form("%f",CheckresidualY[module]->GetFunction("gaus")->GetParameter(1)));
-				//   t1->SetTextSize(0.1);
-				// 	t1->SetTextAlign(12);
-				// 	t1->SetTextColor(2);
-				// 	t1->Draw("same");
-				  //clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
-				  //clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
-			  }
-		  }
-	}
-
-	  checkCanvas->Update();
-	  residPlotCanv->Update();
-	  getchar();
-	  continue;
-	//   getchar();
-			//
 			if (nlayers_with_2Dclust >= 3) { // if the layer > m start to analysis the code
 				//three hit can  form a track
 				find_tracks(mod_clusters, tracktemp);
