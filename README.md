@@ -65,11 +65,15 @@ Detailed documentation of configuration parameters is forthcoming. In the mean t
   root [0] .L GEM_reconstruct.C
   root [1] GEM_reconstruct("../HitData/GEMfixNov18/Hit_run3805_*.root","configINFN.txt","temp.root");
   ~~~~
-  
+* many adjacent cluster was split into two clusters?
 
 ## Dev Plan
-* add the function used for loop on the event and compare with the standard PRex analysis code
-* diagest code used for generate the plot for the cut 
-* add the function used display how many tracks found 
-* ....
+- [x] add the display code used for display the clusters for each GEMs
+- [x] add the code to show number of clusters found
+- [ ] add the function used for loop on the event and compare with the standard PRex analysis code
+- [ ] diagest code used for generate the plot for the cut 
+- [ ] add the function used display how many tracks found 
+- [ ] add the diagnose code used to automaticly generate suitable cut
+
+
 
