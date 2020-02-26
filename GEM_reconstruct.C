@@ -228,39 +228,39 @@ struct clusterdata_t { //1D and 2D clustering results by module:
 	  }
   }
 
-  void PlotTheHit(){
-	  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
-	  if(!checkCanvas){
-		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
-	  }else{
-		  checkCanvas->Clear();
-		  checkCanvas->Divide(2,2);
-	  }
-	  checkCanvas->Draw();
-	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
-	  if(!clusterXZ2D){
-		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }else{
-		  clusterXZ2D->Clear();
-	  }
+//   void PlotTheHit(){
+// 	  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
+// 	  if(!checkCanvas){
+// 		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
+// 	  }else{
+// 		  checkCanvas->Clear();
+// 		  checkCanvas->Divide(2,2);
+// 	  }
+// 	  checkCanvas->Draw();
+// 	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+// 	  if(!clusterXZ2D){
+// 		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+// 	  }else{
+// 		  clusterXZ2D->Clear();
+// 	  }
 	  
-	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
-	  if(!clusterYZ2D){
-		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }else{
-		  clusterYZ2D->Clear();
-	  }
-	  for(int i = 0; i< nclust2D; i ++){
-		  clusterXZ2D->Fill(xglobal2D[i],zglobal2D[i]);
-		  clusterYZ2D->Fill(yglobal2D[i],zglobal2D[i]);
-	  }
-	checkCanvas->cd(1);
-	clusterXZ2D->Draw();
-	checkCanvas->cd(2);
-	clusterYZ2D->Draw();
-	checkCanvas->Update();
-	getchar();
-  }
+// 	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+// 	  if(!clusterYZ2D){
+// 		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+// 	  }else{
+// 		  clusterYZ2D->Clear();
+// 	  }
+// 	  for(int i = 0; i< nclust2D; i ++){
+// 		  clusterXZ2D->Fill(xglobal2D[i],zglobal2D[i]);
+// 		  clusterYZ2D->Fill(yglobal2D[i],zglobal2D[i]);
+// 	  }
+// 	checkCanvas->cd(1);
+// 	clusterXZ2D->Draw();
+// 	checkCanvas->cd(2);
+// 	clusterYZ2D->Draw();
+// 	checkCanvas->Update();
+// 	getchar();
+//   }
   
 };
 
