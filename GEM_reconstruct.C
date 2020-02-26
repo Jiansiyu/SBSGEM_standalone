@@ -2873,7 +2873,7 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-300,300
 	  clusterXZ2DFit->Fit("pol1");
 	  double xp0=clusterXZ2DFit->GetFunction("pol1")->GetParameter(0);
 	  double xp1=clusterXZ2DFit->GetFunction("pol1")->GetParameter(1);
-
+      std::cout<<xp0<<"  "<< xp1<<std::endl;
 	  checkCanvas->cd(2);
 	  clusterYZ2D->Draw();
 	  clusterYZ2DFit->Draw("same");
@@ -2882,19 +2882,19 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-300,300
 	  double yp1=clusterYZ2DFit->GetFunction("pol1")->GetParameter(1);
 	  
 	  //get the residual
-	  for (int module=3; module<6; module++){
-			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
-				  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
-				  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
-				  residPlotCanv->cd(2* module-6+1);
-				  CheckresidualX[module]->Draw("Hist");
- 				  residPlotCanv->cd(2* module-6+2);
-				  CheckresidualY[module]->Draw("Hist");
+	//   for (int module=3; module<6; module++){
+	// 		  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
+	// 			  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
+	// 			  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
+	// 			  residPlotCanv->cd(2* module-6+1);
+	// 			  CheckresidualX[module]->Draw("Hist");
+ 	// 			  residPlotCanv->cd(2* module-6+2);
+	// 			  CheckresidualY[module]->Draw("Hist");
 
-				  //clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
-				  //clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
-			  }
-		  }
+	// 			  //clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
+	// 			  //clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
+	// 		  }
+	// 	  }
 
 	  checkCanvas->Update();
 	  residPlotCanv->Update();
