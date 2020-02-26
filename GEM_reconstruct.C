@@ -2838,7 +2838,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  mod_clusters[1].nclust2D==1
 	  ){
 		  for (int module=0; module<3; module++){
-			  for(int i = 0; i< mod_clusters[module]; i ++){
+			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
 				  clusterXZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
 				  
 			  }
