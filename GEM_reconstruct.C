@@ -2822,6 +2822,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  clusterXZ2D->Draw();
 	  checkCanvas->cd(2);
 	  clusterYZ2D->Draw();
+	  clusterYZ2D->Update();
 	  getchar();
 			//
 			if (nlayers_with_2Dclust >= 3) { // if the layer > m start to analysis the code
