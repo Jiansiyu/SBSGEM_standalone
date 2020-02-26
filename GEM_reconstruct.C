@@ -2904,26 +2904,27 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150
 	  //get the residual
 	  for (int module=3; module<6; module++){
 			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
+				  std::cout<<"Correction on X ="<<mod_clusters[module].zglobal2D[i]-xp0)/xp1<<"  y: "<<mod_clusters[module].zglobal2D[i]-yp0)/yp1<<std::endl;
 				  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
 				  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
 				  residPlotCanv->cd(2* module-6+1);
 				  
 
 				  CheckresidualX[module]->Draw("Hist");
-				  CheckresidualX[module]->Fit("gaus");
-				  TLatex *t2=new TLatex(0,0, Form("%f",CheckresidualX[module]->GetFunction("gaus")->GetParameter(1)));
-				  t2->SetTextSize(0.1);
-					t2->SetTextAlign(12);
-					t2->SetTextColor(2);
-					t2->Draw("same");
+				//   CheckresidualX[module]->Fit("gaus");
+				//   TLatex *t2=new TLatex(0,0, Form("%f",CheckresidualX[module]->GetFunction("gaus")->GetParameter(1)));
+				//   t2->SetTextSize(0.1);
+				// 	t2->SetTextAlign(12);
+				// 	t2->SetTextColor(2);
+				// 	t2->Draw("same");
  				  residPlotCanv->cd(2* module-6+2);
 				  CheckresidualY[module]->Draw("Hist");
-				  CheckresidualY[module]->Fit("gaus");
-				  TLatex *t1=new TLatex(0,0, Form("%f",CheckresidualY[module]->GetFunction("gaus")->GetParameter(1)));
-				  t1->SetTextSize(0.1);
-					t1->SetTextAlign(12);
-					t1->SetTextColor(2);
-					t1->Draw("same");
+				//   CheckresidualY[module]->Fit("gaus");
+				//   TLatex *t1=new TLatex(0,0, Form("%f",CheckresidualY[module]->GetFunction("gaus")->GetParameter(1)));
+				//   t1->SetTextSize(0.1);
+				// 	t1->SetTextAlign(12);
+				// 	t1->SetTextColor(2);
+				// 	t1->Draw("same");
 				  //clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
 				  //clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
 			  }
