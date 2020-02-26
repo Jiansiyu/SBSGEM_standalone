@@ -2881,8 +2881,9 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-300,300
 	  mod_clusters[1].nclust2D==1
 	  ){
 	   xp0=clusterXZ2DFit->GetFunction("pol1")->GetParameter(0);
-	  ouble xp1=clusterXZ2DFit->GetFunction("pol1")->GetParameter(1);
-      std::cout<<xp0<<"  "<< xp1<<std::endl;}
+	   xp1=clusterXZ2DFit->GetFunction("pol1")->GetParameter(1);
+      std::cout<<xp0<<"  "<< xp1<<std::endl;
+	  }
 	  checkCanvas->cd(2);
 	  clusterYZ2D->Draw();
 	  clusterYZ2DFit->Draw("same");
