@@ -2904,7 +2904,7 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150
 	  //get the residual
 	  for (int module=3; module<6; module++){
 			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
-				  std::cout<<"Correction on X ="<<mod_clusters[module].zglobal2D[i]-xp0)/xp1<<"  y: "<<mod_clusters[module].zglobal2D[i]-yp0)/yp1<<std::endl;
+				  std::cout<<"Correction on X ="<<(mod_clusters[module].zglobal2D[i]-xp0)/xp1<<"  y: "<<(mod_clusters[module].zglobal2D[i]-yp0)/yp1<<std::endl;
 				  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
 				  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
 				  residPlotCanv->cd(2* module-6+1);
