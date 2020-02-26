@@ -11,8 +11,8 @@ mod_layer  0   1   2   3   4    5
 # need to check where is the reference point
 # here take the detector center to be the reference point
 # all the modules in same layer need to take same reference point
-mod_x0         -9.35341        -5.15471        -3.29799        -161.55        -163.071        -162.981
-mod_y0          3.65935         8.20683         10.4202        -28.2596        -27.3891         20.17
+mod_x0         -9.35341        -5.15471        -3.29799        -140.55        -140.071        -140.981
+mod_y0          3.65935         8.20683         10.4202        47.2596        47.3891         54.17
 mod_z0            900.0          1585.8          1789.0         2341.35         2443.05          2540.0
 mod_ax        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        
 mod_ay        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000

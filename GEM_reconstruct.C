@@ -2933,6 +2933,7 @@ CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-150,150
 
 	  checkCanvas->Update();
 	  residPlotCanv->Update();
+	  getchar();
 	  continue;
 	//   getchar();
 			//
