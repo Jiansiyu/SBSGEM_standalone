@@ -2806,6 +2806,14 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		  clusterXZ2D->SetMarkerStyle(20);
 		  clusterXZ2D->SetMarkerSize(1);
 	  
+	  	  TH2F *clusterXZ2DFit=(TH2F*)gROOT->FindObject("x_z_clusterfit");
+	  if(!clusterXZ2DFit){
+		  clusterXZ2DFit=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }
+		  clusterXZ2DFit->Clear();
+		  clusterXZ2DFit->SetMarkerStyle(20);
+		  clusterXZ2DFit->SetMarkerSize(1);
+
 	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
 	  if(!clusterYZ2D){
 		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
@@ -2821,11 +2829,29 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		  clusterXZ2D->Fill(modulecluster->second.xglobal2D[i],modulecluster->second.zglobal2D[i]);
 		  clusterYZ2D->Fill(modulecluster->second.yglobal2D[i],modulecluster->second.zglobal2D[i]);
 	  }
+
+	  if(mod_clusters.find(0)!=mod_clusters.end()&&
+	  mod_clusters.find(1)!=mod_clusters.end()&&
+	  mod_clusters.find(2)!=mod_clusters.end()&&
+	  mod_clusters[0].nclust2D==1&&
+	  mod_clusters[2].nclust2D==1&&
+	  mod_clusters[1].nclust2D==1
+	  ){
+		  for (int module=0; module<3; module++){
+			  for(int i = 0; i< mod_clusters[module]; i ++){
+				  clusterXZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
+				  
+			  }
+		  }
+	  }
+
 	  }
 	  checkCanvas->cd(1);
 	  clusterXZ2D->Draw();
 	  checkCanvas->cd(2);
 	  clusterYZ2D->Draw();
+	  clusterXZ2DFit->Draw("same");
+	  clusterXZ2DFit->Fit("pol1");
 	  checkCanvas->Update();
 	  getchar();
 			//
