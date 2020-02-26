@@ -19,8 +19,8 @@ using namespace std;
 
 double PI = TMath::Pi();
 
-int nlayers=4;
-int nmodules=12;
+int nlayers=6;
+int nmodules=6;
 
 //Make these global for chi^2 function for numerical minimization:
 
@@ -130,7 +130,7 @@ void GEM_align( const char *inputfilename, const char *configfilename, const cha
   //default to 100000
   NMAX=100000; //limit number of events so we can maximize number of alignment iterations.
   
-  int refmod=4;
+  int refmod=0;
   
   TCut globalcut = "";
 

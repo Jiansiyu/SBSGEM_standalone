@@ -1,4 +1,12 @@
-void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.0){
+#include <TROOT.h>
+#include <TCanvas.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TStyle.h>
+#include <TGaxis.h>
+#include <TFile.h>
+
+void plot_GEMrun_summary(const char *filename, int nlayers=6, double chi2cut=50.0){
   gROOT->ProcessLine(".x ~/rootlogon.C");
 
   gStyle->SetOptStat(0);

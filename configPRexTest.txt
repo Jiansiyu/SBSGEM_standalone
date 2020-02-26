@@ -2,7 +2,7 @@
 #! for mod_xxx configure, each row is the configuration for the module 
 nlayers 6
 nmodules 6
-#NMAX 200000
+NMAX 200000
 #position: ModuleID start from 0, and the connected LayerID
 mod_layer  0   1   2   3   4    5 
 # for prex experiment, all the GEMs are aligned to VDC, probabaly the current initial position is not good enough
@@ -11,12 +11,18 @@ mod_layer  0   1   2   3   4    5
 # need to check where is the reference point
 # here take the detector center to be the reference point
 # all the modules in same layer need to take same reference point
-mod_x0         -9.35341        -5.15471        -3.29799        -140.55        -140.071        -140.981
-mod_y0          3.65935         8.20683         10.4202        47.2596        47.3891         54.17
-mod_z0            900.0          1585.8          1789.0         2341.35         2443.05          2540.0
-mod_ax        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        
-mod_ay        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
-mod_az        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
+mod_x0         -9.35341         -5.9195        -4.57348        -138.948        -140.404        -141.218
+mod_y0          3.65935         7.63423         9.61665         47.5969         48.4232         52.4928
+mod_z0              900         1558.73         1786.22         2313.03         2438.64         2561.69
+mod_ax                0       0.0373503        0.062838        0.103882       0.0855701        0.100977
+mod_ay                0        0.160192        0.151318      -0.0345015      -0.0146026      -0.0111718
+mod_az                0     -0.00439636     -0.00266072     0.000709866     0.000579498      0.00170111
+#mod_x0         -9.35341        -5.15471        -3.29799        -140.55        -140.071        -140.981
+#mod_y0          3.65935         8.20683         10.4202        47.2596        47.3891         54.17
+#mod_z0            900.0          1585.8          1789.0         2341.35         2443.05          2540.0
+#mod_ax        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        
+#mod_ay        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
+#mod_az        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000        	  0.000
 #mod_x0         -9.35341        -5.15471        -3.29799        -160.666        -163.071        -162.981
 #mod_y0          3.65935         8.20683         10.4202        -26.3096        -27.3891         20.5816
 #mod_z0            900.0          1585.8          1789.0         2341.35         2443.05          2540.0
