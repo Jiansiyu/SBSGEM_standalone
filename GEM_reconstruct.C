@@ -2801,16 +2801,16 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
 	  if(!clusterXZ2D){
 		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }else{
-		  clusterXZ2D->Clear();
 	  }
+		  clusterXZ2D->Clear();
+	  
 	  
 	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
 	  if(!clusterYZ2D){
 		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
-	  }else{
-		  clusterYZ2D->Clear();
 	  }
+		  clusterYZ2D->Clear();
+	  
 	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
 
 		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
