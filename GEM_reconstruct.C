@@ -2803,13 +2803,16 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
 	  }
 		  clusterXZ2D->Clear();
-	  
+		  clusterXZ2D->SetMarkerStyle(20);
+		  clusterXZ2D->SetMarkerSize(1);
 	  
 	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
 	  if(!clusterYZ2D){
 		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
 	  }
 		  clusterYZ2D->Clear();
+		  clusterYZ2D->SetMarkerStyle(20);
+		  clusterYZ2D->SetMarkerSize(1);
 	  
 	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
 
