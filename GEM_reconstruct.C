@@ -34,6 +34,9 @@
 
 using namespace std;
 
+TH1F * CheckresidualX[6];
+TH1F * CheckresidualY[6];
+
 //#include "TApplication.h"
 
 //TODO: don't hard-code the number of APV25 samples. But for this we need a better decoded hit format anyway
@@ -1624,6 +1627,16 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 }
 
 void GEM_reconstruct( const char *filename, const char *configfilename, const char *outfilename="temp.root" ){
+TCanvas *residPlotCanv=new TCanvas("check resi","check resi", 1000,1000);
+residPlotCanv->Divide(3,2);
+
+CheckresidualX[3]= new TH1F("residual_Modulex3","residual_Modulex3",600,-300,300);
+CheckresidualX[4]= new TH1F("residual_Modulex4","residual_Modulex4",600,-300,300);
+CheckresidualX[5]= new TH1F("residual_Modulex5","residual_Modulex5",600,-300,300);
+
+CheckresidualY[3]= new TH1F("residual_ModuleY3","residual_ModuleY3",600,-300,300);
+CheckresidualY[4]= new TH1F("residual_ModuleY4","residual_ModuleY4",600,-300,300);
+CheckresidualY[5]= new TH1F("residual_ModuleY5","residual_ModuleY5",600,-300,300);
 
   // ? what this used for
   //Initialize walk correction parameters:
@@ -2822,6 +2835,14 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 		  clusterYZ2D->SetMarkerStyle(20);
 		  clusterYZ2D->SetMarkerSize(1);
 	  
+	  TH2F *clusterYZ2DFit=(TH2F*)gROOT->FindObject("x_z_clusterfit");
+	  if(!clusterYZ2DFit){
+		  	clusterYZ2DFit=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }
+		  clusterYZ2DFit->Clear();
+		  clusterYZ2DFit->SetMarkerStyle(20);
+		  clusterYZ2DFit->SetMarkerSize(1);
+
 	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
 
 		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
@@ -2839,8 +2860,8 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  ){
 		  for (int module=0; module<3; module++){
 			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
-				  clusterXZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
-				  
+				  clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
+				  clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
 			  }
 		  }
 	  }
@@ -2848,11 +2869,35 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 	  }
 	  checkCanvas->cd(1);
 	  clusterXZ2D->Draw();
-	  checkCanvas->cd(2);
-	  clusterYZ2D->Draw();
 	  clusterXZ2DFit->Draw("same");
 	  clusterXZ2DFit->Fit("pol1");
+	  double xp0=clusterXZ2DFit->GetFunction("pol1")->GetParameter(0);
+	  double xp1=clusterXZ2DFit->GetFunction("pol1")->GetParameter(1);
+
+	  checkCanvas->cd(2);
+	  clusterYZ2D->Draw();
+	  clusterYZ2DFit->Draw("same");
+	  clusterYZ2DFit->Fit("pol1");
+	  double yp0=clusterYZ2DFit->GetFunction("pol1")->GetParameter(0);
+	  double yp1=clusterYZ2DFit->GetFunction("pol1")->GetParameter(1);
+	  
+	  //get the residual
+	  for (int module=3; module<6; module++){
+			  for(int i = 0; i< mod_clusters[module].nclust2D; i ++){
+				  CheckresidualX[module]->Fill((mod_clusters[module].zglobal2D[i]-xp0)/xp1);
+				  CheckresidualY[module]->Fill((mod_clusters[module].zglobal2D[i]-yp0)/yp1);
+				  residPlotCanv->cd(2* module-6+1);
+				  CheckresidualX[module]->Draw("Hist");
+ 				  residPlotCanv->cd(2* module-6+2);
+				  CheckresidualY[module]->Draw("Hist");
+
+				  //clusterXZ2DFit->Fill(mod_clusters[module].xglobal2D[i],mod_clusters[module].zglobal2D[i]);
+				  //clusterYZ2DFit->Fill(mod_clusters[module].yglobal2D[i],mod_clusters[module].zglobal2D[i]);
+			  }
+		  }
+
 	  checkCanvas->Update();
+	  residPlotCanv->Update();
 	  getchar();
 			//
 			if (nlayers_with_2Dclust >= 3) { // if the layer > m start to analysis the code
