@@ -227,6 +227,40 @@ struct clusterdata_t { //1D and 2D clustering results by module:
 
 	  }
   }
+
+  void PlotTheHit(){
+	  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
+	  if(!checkCanvas){
+		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
+	  }else{
+		  checkCanvas->Clear();
+		  checkCanvas->Divide(2,2);
+	  }
+	  checkCanvas->Draw();
+	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+	  if(!clusterXZ2D){
+		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }else{
+		  clusterXZ2D->Clear();
+	  }
+	  
+	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+	  if(!clusterYZ2D){
+		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }else{
+		  clusterYZ2D->Clear();
+	  }
+	  for(int i = 0; i< nclust2D; i ++){
+		  clusterXZ2D->Fill(xglobal2D[i],zglobal2D[i]);
+		  clusterYZ2D->Fill(yglobal2D[i],zglobal2D[i]);
+	  }
+	checkCanvas->cd(1);
+	clusterXZ2D->Draw();
+	checkCanvas->cd(2);
+	clusterYZ2D->Draw();
+	checkCanvas->Update();
+	getchar();
+  }
   
 };
 
@@ -1108,15 +1142,12 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
     // std::cout<<"**********"<<__FUNCTION__<<"****** check prune"<<std::endl;
     // auto clusttemp=mod_clusters[module];
     // clusttemp.PrintCluster2D();
-    
 
     if( mod_clusters[module].nclust2D > 0 ){
       for( int iclust=0; iclust<mod_clusters[module].nclust2D; iclust++ ){
 	// double ADCasym = mod_clusters[module].dEclust2D[iclust]/(2.*mod_clusters[module].Eclust2D[iclust]);
 	// double Tdiff   = mod_clusters[module].dtclust2D[iclust];
-
 	// double corrcoeff = mod_clusters[module].CorrCoeff2D[iclust];
-
 	// if( fabs( ADCasym ) < cluster2Dmatch_asymcut && fabs( Tdiff ) < cluster2Dmatch_tcut &&
 	//     fabs(mod_clusters[module].dEclust2D[iclust])<1000.0 && mod_clusters[module].nstripx2D[iclust]<=5 &&
 	//     mod_clusters[module].nstripy2D[iclust]<=5 ){ // GOOD match:
@@ -1130,13 +1161,15 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	  clustindexhit2D[layer].push_back( iclust );
 	  hitused2D[layer].push_back( false );
 	  
-	  N2Dhits_layer[layer] = modindexhit2D[layer].size();
+	  N2Dhits_layer[layer] = modindexhit2D[layer].size(); // how many hit on each layer 
 	}  
       }
     }
   }
+  // finish buffer the clusters 
+  // next will start to find the tracks 
 
-  //do we need to require n-1 modules
+  //do we need to require n-1 modules --siyu
   if( layers_2Dmatch.size() >= minLayerTrack ){
     //trackdata_t trackdatatemp;
     trackdata.ntracks = 0;
@@ -1158,8 +1191,7 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	//here we populate the lists of free hits by layer: if we found a track on the previous iteration, some hits will have been marked as used
 	//if we didn't find a track, then no hits will have been marked as used, but the number of hits required to
 	//make a track will have been decremented:
-	//
-	
+
 	long ncombosremaining=1;
 
 	map<int,int> Nfreehits_layer; //free hit count mapped by layer
@@ -1167,19 +1199,19 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	map<int,vector<int> > freehitlist_layer; //list of free hits mapped by layer: index in the unchanging arrays defined above:
 	map<int,int> freehitcounter; //counter for looping over combos:
 	
-	for(set<int>::iterator ilay=layers_2Dmatch.begin(); ilay!=layers_2Dmatch.end(); ++ilay ){
+	for(set<int>::iterator ilay=layers_2Dmatch.begin(); ilay!=layers_2Dmatch.end(); ++ilay ){ // loop on the layers have hit
 	  int layer = *ilay;
 	  Nfreehits_layer[layer] = 0;
 	  
 	  for( int ihit=0; ihit<N2Dhits_layer[layer]; ihit++ ){
 	    if( !hitused2D[layer][ihit] ) {
 	      Nfreehits_layer[layer]++;
-	      freehitlist_layer[layer].push_back( ihit );
+	      freehitlist_layer[layer].push_back( ihit );   // number of  free hit on each layer, can be used as hit ID ?
 	    }
 	  }
  
 	  if( Nfreehits_layer[layer] > 0 ){
-	    ncombosremaining *= Nfreehits_layer[layer];
+	    ncombosremaining *= Nfreehits_layer[layer];// 2*1*2*2*4 etc, calculate how many possible combinations 
 	    layerswithfreehits.insert(layer);
 	    freehitcounter[layer] = 0;
 	  }
@@ -1197,10 +1229,9 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	
 	if( layerswithfreehits.size() >= nhitsrequired ){ //If the number of layers with free hits exceeds the number of hits required to make a track, proceed:
 	  
-
 	  //number of layers to in total:
 	  int nlayerstot = layerswithfreehits.size();
-
+	  
 	  //int nlayercombos=pow(2,nlayerstot); //ALL possible ON/OFF combos of the layers with available hits:
 
 	  //vector<vector<int> > layercombos; //all possible combinations of nhitsrequired layers:
@@ -1265,17 +1296,17 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	  int ngoodcombos=0; //number of plausible track candidates found:
 	  
 	  for( int icombo=0; icombo<layercombos[nhitsrequired].size(); icombo++ ){ //loop over all possible combinations of nhitsrequired LAYERS with available hits:
-
+        
 	    nextcomboexists = true;
 	    
 	    set<int> layerstotest; //populate the list of layers to be tested:
-	    for( int ihit=0; ihit<nhitsrequired; ihit++ ){
+	    for( int ihit=0; ihit<nhitsrequired; ihit++ ){ // loop on all possible combinations 
 
-	      int layeri = layercombos[nhitsrequired][icombo][ihit];
+	      int layeri = layercombos[nhitsrequired][icombo][ihit]; // [how many layer required][combination counter][combination items(layer)]
 
-	      if( layerswithfreehits.find(layeri) != layerswithfreehits.end() ){
+	      if( layerswithfreehits.find(layeri) != layerswithfreehits.end() ){ // the layer included in the conbinations 
 	      
-		layerstotest.insert( layeri );
+		layerstotest.insert( layeri );   
 	      //at the beginning of each layer combination, reset the free hit counter to zero for each layer being tested:
 		freehitcounter[layeri] = 0;
 	      }
@@ -1284,9 +1315,10 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	    if( layerstotest.size() < nhitsrequired ) nextcomboexists = false;
 
 	    first = true;
-	    
+
+	    // loop over all possible combination?
 	    while( nextcomboexists ){ //this will loop over all possible combos:
-	      
+
 	      //sums for computation of tracks "on the fly":
 	      double sumxhits=0.0,sumyhits=0.0,sumzhits=0.0,sumxzhits=0.0,sumyzhits=0.0,sumz2hits=0.0;
 	      
@@ -1303,16 +1335,16 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 	      nhits = 0;
 
 	      for( set<int>::iterator layercounter = layerstotest.begin(); layercounter != layerstotest.end(); ++layercounter ){
-		int layer = *layercounter;
-		int nextlayer = *nextlayercounter;
-		
-		ontrack[layer] = false;
+		  int layer = *layercounter;
+		  int nextlayer = *nextlayercounter;
+		  ontrack[layer] = false;
 	      
 		if( layer == nextlayer && !first ){
 		  if( freehitcounter[layer]+1 < Nfreehits_layer[layer] ){
 		    //increment free hit counter:
 		    freehitcounter[layer]++;
-		  } else { //reached last hit in current layer; roll back to first hit in this layer and increment hit counter in next layer:
+		  } else { 
+			//reached last hit in current layer; roll back to first hit in this layer and increment hit counter in next layer:
 		    // Note that this means on the next iteration of layercounter,
 		    // layer == nextlayer will evaluate to true, and we will attempt to increment freehitcounter
 		    // for that layer as long as another free hit is available. Meanwhile, since the
@@ -1338,7 +1370,8 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 		double xhittemp = mod_clusters[module].xglobal2D[iclust];
 		double yhittemp = mod_clusters[module].yglobal2D[iclust];
 		double zhittemp = mod_clusters[module].zglobal2D[iclust]; 
-		
+
+		// probably the following code caused the trouble --siyu 
 		if( nhits == 0 ){ //first hit: use as seed to filter subsequent hits based on fit to straight lines:
 		  xtrtemp = xhittemp;
 		  ytrtemp = yhittemp;
@@ -1500,6 +1533,8 @@ void find_tracks( map<int,clusterdata_t> mod_clusters, trackdata_t &trackdata ){
 		}
 		
 		ngoodcombos++;
+		std::cout<<"Number of good track ::"<< ngoodcombos<<std::endl;
+		getchar();
 		
 	      } //if (nhits > nhitsrequired)
 	    } //while (nextcomboexists): end loop over all possible hit combos for current value of nhitsrequired:
@@ -2015,15 +2050,29 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
       int testbit = pow(2,ilayer);
       onoff[ilayer] = ( (testbit & icombo) != 0 ); //bitwise AND of icombo and 2^ilayer non-zero:
       if( onoff[ilayer] ){
-	nlayersoncombo++;
-	layercombo.push_back( ilayer );
+	      nlayersoncombo++;
+	      layercombo.push_back( ilayer );
       }
     }
 
-    if( nlayersoncombo >= 3 ){
+    if( nlayersoncombo >= minLayerTrack ){
       layercombos[nlayersoncombo].push_back( layercombo );
+	  
     }
   }
+
+// for (int i =0 ; i < layercombos.size();i++){
+// 	std::cout<<"number of layer combo:  "<< i <<std::endl;
+// 	for(auto j : layercombos[i]){
+// 		std::cout<<"\t"<<"Combinations:"<<std::endl;
+// 		for(auto item : j){
+// 			std::cout<<"\t\t"<< item <<",  ";
+// 		}
+// 		std::cout<<std::endl;
+// 	}
+// }
+
+//   getchar();
   
   //Output ROOT tree structure for alignment code, tracking diagnostics, etc:
   
@@ -2703,6 +2752,7 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 							<< clusttemp.iystriphi[i] << ",  "
 							<< clusttemp.nstripy[i] << ")" << std::endl;
 				}
+				
 				//getchar();
 				//need to add the plot to shows the corrected position of each detector
 
@@ -2740,6 +2790,39 @@ void GEM_reconstruct( const char *filename, const char *configfilename, const ch
 
 			tracktemp.ntracks = 0;
 
+				  TCanvas *checkCanvas=( TCanvas *)gROOT->GetListOfCanvases()->FindObject("cluster_check_canv");
+	  if(!checkCanvas){
+		  checkCanvas=new TCanvas("cluster_check_canv","cluster_check_canv",1000,1000);
+	  }else{
+		  checkCanvas->Clear();
+		  checkCanvas->Divide(2,2);
+	  }
+	  checkCanvas->Draw();
+	  TH2F *clusterXZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+	  if(!clusterXZ2D){
+		  clusterXZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }else{
+		  clusterXZ2D->Clear();
+	  }
+	  
+	  TH2F *clusterYZ2D=(TH2F*)gROOT->FindObject("x_z_cluster");
+	  if(!clusterYZ2D){
+		  	clusterYZ2D=new TH2F("x_z_cluster","x_z_cluster",1000,-500,500,1000,-100,3000);
+	  }else{
+		  clusterYZ2D->Clear();
+	  }
+	  for(auto modulecluster = mod_clusters.begin(); modulecluster!=mod_clusters.end();modulecluster++){
+
+		  for(int i = 0; i< modulecluster->second.nclust2D; i ++){
+		  clusterXZ2D->Fill(modulecluster->second.xglobal2D[i],modulecluster->second.zglobal2D[i]);
+		  clusterYZ2D->Fill(modulecluster->second.yglobal2D[i],modulecluster->second.zglobal2D[i]);
+	  }
+	  }
+	  checkCanvas->cd(1);
+	  clusterXZ2D->Draw();
+	  checkCanvas->cd(2);
+	  clusterYZ2D->Draw();
+	  getchar();
 			//
 			if (nlayers_with_2Dclust >= 3) { // if the layer > m start to analysis the code
 				//three hit can  form a track
