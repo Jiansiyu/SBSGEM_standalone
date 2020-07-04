@@ -1,4 +1,4 @@
-void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.0, double CALOCUT=0.0){
+void plot_GEMrun_summary(const char *filename, int nlayers=4, int nmodules=12, double chi2cut=50.0, double CALOCUT=0.0, int longdimension=1){
   gROOT->ProcessLine(".x ~/rootlogon.C");
 
   gStyle->SetOptStat(0);
@@ -386,8 +386,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
 
   int binlow = binmax, binhigh = binmax;
   
-  while( hXresid->GetBinContent(binlow--)>0.6*hXresid->GetBinContent(binmax) ){};
-  while( hXresid->GetBinContent(binhigh++)>0.6*hXresid->GetBinContent(binmax) ){};
+  while( hXresid->GetBinContent(binlow--)>0.5*hXresid->GetBinContent(binmax) ){};
+  while( hXresid->GetBinContent(binhigh++)>0.5*hXresid->GetBinContent(binmax) ){};
   
   hXresid->GetXaxis()->SetTitle(stitle.Format("Track X residual (mm), #chi^{2}/dof<%5.3g",chi2cut));
   hXresid->Draw();
@@ -399,8 +399,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
   binmax = hYresid->GetMaximumBin();
 
   binlow = binmax; binhigh = binmax;
-  while( hYresid->GetBinContent(binlow--)>0.6*hYresid->GetBinContent(binmax) ){};
-  while( hYresid->GetBinContent(binhigh++)>0.6*hYresid->GetBinContent(binmax) ){};
+  while( hYresid->GetBinContent(binlow--)>0.5*hYresid->GetBinContent(binmax) ){};
+  while( hYresid->GetBinContent(binhigh++)>0.5*hYresid->GetBinContent(binmax) ){};
   
   hYresid->GetXaxis()->SetTitle(stitle.Format("Track Y residual (mm), #chi^{2}/dof<%5.3g",chi2cut));
   hYresid->Draw();
@@ -439,8 +439,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
   binmax = hXeresid->GetMaximumBin();
   binlow = binmax; binhigh = binmax;
 
-  while( hXeresid->GetBinContent(binlow--)>0.6*hXeresid->GetBinContent(binmax) ){};
-  while( hXeresid->GetBinContent(binhigh++)>0.6*hXeresid->GetBinContent(binmax) ){};
+  while( hXeresid->GetBinContent(binlow--)>0.5*hXeresid->GetBinContent(binmax) ){};
+  while( hXeresid->GetBinContent(binhigh++)>0.5*hXeresid->GetBinContent(binmax) ){};
 
   
   c1->cd(3);
@@ -451,8 +451,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
   binmax = hYeresid->GetMaximumBin();
   binlow = binmax; binhigh = binmax;
 
-  while( hYeresid->GetBinContent(binlow--)>0.6*hYeresid->GetBinContent(binmax) ){};
-  while( hYeresid->GetBinContent(binhigh++)>0.6*hYeresid->GetBinContent(binmax) ){};
+  while( hYeresid->GetBinContent(binlow--)>0.5*hYeresid->GetBinContent(binmax) ){};
+  while( hYeresid->GetBinContent(binhigh++)>0.5*hYeresid->GetBinContent(binmax) ){};
 
   c1->cd(6);
   hYeresid->Fit("gaus","","",hYeresid->GetBinCenter(binlow),hYeresid->GetBinCenter(binhigh));
@@ -486,23 +486,37 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
   
   hYresid->Draw();
 
-  
+  //  int npixelx =2400;
+  // int npixely 
   
   TCanvas *c2 = new TCanvas("c2","c2",2400,1200);
 
   lmargin = 0.2;
   bmargin = 0.12;
   rmargin = 0.18;
-  tmargin = 0.06;
+  tmargin = 0.1;
 
   gStyle->SetNdivisions(510,"XYZ");
   gStyle->SetLabelSize(.06,"XYZ");
   gStyle->SetTitleSize(.06,"XYZ");
 
   gROOT->ForceStyle();
-  
-  c2->Divide(nlayers,1,.001,.001);
 
+  //Now let's figure out how to divide the canvas such that the aspect ratio is not too distorted:
+
+  if( longdimension == 1 ){ //long dimension of the layers is along the vertical axis of the histogram:
+    c2->Divide(nlayers,1,.001,.001);
+  } else { //long dimension of the layers is along the horizontal axis of the histogram, make two columns, and vertical divisions
+    int nhalf = int(double(nlayers)/2.0+0.5); //For odd numbers, this will round up, for even numbers this will round down
+    c2->Divide(2,nhalf,.001,.001);
+    lmargin=0.1;
+    rmargin=0.1;
+    //rmargin=0.2;
+
+    TGaxis::SetMaxDigits(4);
+  }
+
+  
   for( int ilayer = 0; ilayer<nlayers; ilayer++ ){
     TH2D *htemp = ( (TH2D*) (*heff_layers)[ilayer] );
 
@@ -515,7 +529,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
 
     htemp->SetTitleSize(.06,"XYZ");
     htemp->SetLabelSize(.06,"XYZ");
-    htemp->SetTitleOffset(1.4,"Y");
+    if( longdimension == 1 )  { htemp->SetTitleOffset(1.4,"Y"); }
+    else { htemp->SetTitleOffset(0.7,"Y"); }
     htemp->SetNdivisions(510,"YZ");
     htemp->GetXaxis()->SetTitle("Y (mm)");
     htemp->GetYaxis()->SetTitle("X (mm)");
@@ -536,7 +551,8 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
 
     htemp->SetTitleSize(.06,"XYZ");
     htemp->SetLabelSize(.06,"XYZ");
-    htemp->SetTitleOffset(1.4,"Y");
+    if( longdimension == 1 )  { htemp->SetTitleOffset(1.4,"Y"); }
+    else { htemp->SetTitleOffset(0.7,"Y"); }
     htemp->SetNdivisions(510,"YZ");
     htemp->GetXaxis()->SetTitle("Y (mm)");
     htemp->GetYaxis()->SetTitle("X (mm)");
@@ -544,6 +560,500 @@ void plot_GEMrun_summary(const char *filename, int nlayers=4, double chi2cut=50.
   }
 
   c2->Print(pdffilename);
+
+  //Make a set of canonical plots module-by-module:
+  TCanvas *c4 = new TCanvas("c4","c4",1760,1320);
+
+  TGaxis::SetMaxDigits(3);
+  
+  //1. Number of strips fired X and Y (same plot, overlay)
+  //2. Number of clusters (track passed through)
+  //3. Cluster width X and Y (same plot, overlay)
+  //4. Max time bin X and Y (same plot, overlay)
+  //5. ADC asymmetry
+  //6. X-Y time difference
+  //7. ADC sum for max X and Y strips (same plot, overlay)
+  //8. Max ADC sample for X and Y strips (same plot, overlay)
+  //9. Cluster ADC sum X and Y (same plot, overlay)
+  //10. seed pixel correlation coeff. and cluster corr. coeff. (same plot, overlay)
+  //11. X inclusive residuals with fit 
+  //12. Y inclusive residuals with fit 
+  //13. X exclusive residuals with fit
+  //14. Y exclusive residuals with fit
+  //15. Hit map
+  //16. Efficiency map
+
+  TH2D *hNstripsX_module, *hNstripsY_module, *hNclust_module, *hclustwidth_x_module,*hclustwidth_y_module;
+  TH2D *hmaxtimebin_xstrip_module,*hmaxtimebin_ystrip_module;
+  TH2D *hADCasym_vs_module,*hdT_vs_module;
+  TH2D *hADCsum_Xstrip_max_module,*hADCsum_Ystrip_max_module;
+  TH2D *hADCsampmax_Xstrip_module,*hADCsampmax_Ystrip_module;
+  TH2D *hADCprodXYstrip_max_module,*hADCprodXYsamp_max_module,*hADCprodXYclust_module;
+  TH2D *hADCsumXclust_module,*hADCsumYclust_module;
+  TH2D *hStrip_maxcor_module,*hClust_corr_module;
+
+  fin->GetObject("hNstripsX_module",hNstripsX_module);
+  fin->GetObject("hNstripsY_module",hNstripsY_module);
+  fin->GetObject("hNclust_module",hNclust_module);
+  fin->GetObject("hclustwidth_x_module",hclustwidth_x_module);
+  fin->GetObject("hclustwidth_y_module",hclustwidth_y_module);
+  fin->GetObject("hmaxtimebin_xstrip_module",hmaxtimebin_xstrip_module);
+  fin->GetObject("hmaxtimebin_ystrip_module",hmaxtimebin_ystrip_module);
+  fin->GetObject("hADCasym_vs_module",hADCasym_vs_module);
+  fin->GetObject("hdT_vs_module",hdT_vs_module);
+  fin->GetObject("hADCsum_Xstrip_max_module",hADCsum_Xstrip_max_module);
+  fin->GetObject("hADCsum_Ystrip_max_module",hADCsum_Ystrip_max_module);
+  fin->GetObject("hADCsampmax_Xstrip_module",hADCsampmax_Xstrip_module);
+  fin->GetObject("hADCsampmax_Ystrip_module",hADCsampmax_Ystrip_module);
+  fin->GetObject("hADCprodXYstrip_max_module",hADCprodXYstrip_max_module);
+  fin->GetObject("hADCprodXYsamp_max_module",hADCprodXYsamp_max_module);
+  fin->GetObject("hADCprodXYclust_module",hADCprodXYclust_module);
+  fin->GetObject("hADCsumXclust_module",hADCsumXclust_module);
+  fin->GetObject("hADCsumYclust_module",hADCsumYclust_module);
+  fin->GetObject("hStrip_maxcor_module",hStrip_maxcor_module);
+  fin->GetObject("hClust_corr_module",hClust_corr_module);
+  
+  //TClonesArray *hxyhit_modules = new TClonesArray("TH2D",nmodules);
+  //TClonesArray *heff_modules = new TClonesArray("TH2D",nmodules);
+
+  //THStack *hoverlay = new THStack("hoverlay","");
+
+  lmargin = 0.13;
+  rmargin = 0.13;
+  bmargin = 0.13;
+  tmargin = 0.13;
+  
+  for( int imodule=0; imodule<nmodules; imodule++ ){
+    //int module = imodule-1;
+
+    TString modname;
+    modname.Form( "Module %d", imodule );
+    TString hnametemp;
+    hnametemp.Form("hxyhit_module%d",imodule);
+    
+    TH2D *hxytemp;
+    fin->GetObject( hnametemp, hxytemp );
+    //new( (TH2D*) (*hxyhit_modules)[imodule] ) TH2D( *htemp );
+
+    hnametemp.Form("heff_module%d",imodule);
+
+    TH2D *hefftemp;
+    fin->GetObject( hnametemp, hefftemp );
+    //new( (TH2D*) (*heff_modules)[imodule] ) TH2D( *htemp );
+
+    c4->Clear();
+    c4->Divide(4,4,.001,.001);
+    c4->Update();
+
+    TLegend *legtemp;
+    
+    TH1D *htemp1,*htemp2,*htemp3;
+    
+    c4->cd(1);
+
+    
+    
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hNstripsX_module->ProjectionX( hnametemp.Format("hnstripx_mod%d",imodule), imodule+1,imodule+1 );
+    htemp2 = hNstripsY_module->ProjectionX( hnametemp.Format("hnstripy_mod%d",imodule), imodule+1,imodule+1 );
+
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+
+    htemp1->SetTitle(modname);
+    htemp2->SetTitle(modname);
+    
+    if( htemp1->GetMaximum() > htemp2->GetMaximum() ){
+      htemp1->Draw();
+      //      htemp1->SetTitle("");
+      htemp1->GetXaxis()->SetRangeUser(-0.5,20.5);
+      htemp1->SetXTitle("Number of strips fired");
+      htemp2->Draw("SAME");
+    } else {
+      htemp2->Draw();
+      // htemp2->SetTitle("");
+      htemp2->GetXaxis()->SetRangeUser(-0.5,20.5);
+      htemp2->SetXTitle("Number of strips fired");
+      htemp1->Draw("SAME");
+    }
+
+    legtemp = new TLegend( 0.5, 0.5, 1.0-tmargin, 1.0-rmargin );
+
+    legtemp->AddEntry( htemp1, "X strips", "l");
+    legtemp->AddEntry( htemp2, "Y strips", "l");
+
+    legtemp->SetTextFont(62);
+    legtemp->SetTextSize(0.05);
+    legtemp->SetFillStyle(0);
+    legtemp->SetBorderSize(0);
+    legtemp->Draw();
+
+    c4->cd(2);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hNclust_module->ProjectionX( hnametemp.Format("hnclust_mod%d",imodule), imodule+1,imodule+1);
+    htemp1->SetTitle(modname);
+    htemp1->Draw();
+    htemp1->GetXaxis()->SetRangeUser(-0.5,20.5);
+    htemp1->SetXTitle("Number of reconstructed 2D clusters");
+    
+    c4->cd(3);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hclustwidth_x_module->ProjectionX( hnametemp.Format("hclwidthx_mod%d",imodule), imodule+1,imodule+1);
+    htemp2 = hclustwidth_y_module->ProjectionX( hnametemp.Format("hclwidthy_mod%d",imodule), imodule+1,imodule+1);
+
+    htemp1->SetXTitle("Cluster size in strips");
+    htemp2->SetXTitle("Cluster size in strips");
+
+    htemp1->SetTitle(modname);
+    htemp2->SetTitle(modname);
+    
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+    
+    if( htemp1->GetMaximum() > htemp2->GetMaximum() ){
+      htemp1->Draw();
+      htemp2->Draw("SAME");
+    } else {
+      htemp2->Draw();
+      htemp1->Draw("SAME");
+    }
+
+    legtemp->Draw();
+    
+    c4->cd(4);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hmaxtimebin_xstrip_module->ProjectionX(hnametemp.Format("hmaxbinx_mod%d",imodule),imodule+1,imodule+1);
+    htemp2 = hmaxtimebin_ystrip_module->ProjectionX(hnametemp.Format("hmaxbiny_mod%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+
+    htemp1->SetXTitle("Max time bin for max strip in cluster");
+    htemp2->SetXTitle("Max time bin for max strip in cluster");
+    htemp1->SetTitle(modname);
+    htemp2->SetTitle(modname);
+    
+    if( htemp1->GetMaximum() > htemp2->GetMaximum() ){
+      htemp1->Draw();
+      htemp2->Draw("SAME");
+    } else {
+      htemp2->Draw();
+      htemp1->Draw("SAME");
+    }
+    
+    c4->cd(5);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hADCasym_vs_module->ProjectionY(hnametemp.Format("hADCasym_mod%d",imodule),imodule+1,imodule+1);
+
+    TString htitle = modname;
+    htitle += ", hits on tracks";
+    
+    htemp1->SetTitle(htitle);
+    htemp1->SetXTitle("(ADCX-ADCY)/(ADCX+ADCY)");
+    
+    htemp1->Draw();
+
+    c4->cd(6);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hdT_vs_module->ProjectionY(hnametemp.Format("hdT_mod%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetTitle(modname);
+    htemp1->SetXTitle("t_{x}-t_{y} (ns), clusters on track");
+    htemp1->Draw();
+    
+    c4->cd(7);
+
+    lmargin=0.16;
+    rmargin=0.16;
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+
+    htitle = modname;
+    htitle += ", hits on tracks";
+    
+    hxytemp->SetTitle(modname);
+    hxytemp->SetXTitle("Hit Y (mm)");
+    hxytemp->SetYTitle("Hit X (mm)");
+    hxytemp->SetTitleOffset(1.1,"Y");
+    hxytemp->Draw("colz");
+
+    //    lmargin = 0.12;
+    //rmargin = 0.12;
+
+    c4->cd(8);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    hefftemp->SetMinimum(0);
+    hefftemp->SetMaximum(1);
+    hefftemp->SetXTitle("Y (mm)");
+    hefftemp->SetYTitle("X (mm)");
+    hefftemp->SetTitleOffset(1.1,"Y");
+    hefftemp->Draw("colz");
+
+    //change margins back to defaults:
+    
+    lmargin = 0.13;
+    rmargin = 0.13;
+    
+    c4->cd(9);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hADCsampmax_Xstrip_module->ProjectionX(hnametemp.Format("hsxmax_mod%d",imodule),imodule+1,imodule+1);
+    htemp2 = hADCsampmax_Ystrip_module->ProjectionX(hnametemp.Format("hsymax_mod%d",imodule),imodule+1,imodule+1);
+    htemp3 = hADCprodXYsamp_max_module->ProjectionX(hnametemp.Format("hsxymax_mod%d",imodule),imodule+1,imodule+1);
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+    htemp3->SetLineColor(kGreen+1);
+    
+    THStack *hstack_samp = new THStack("hstack_samp",modname);
+    hstack_samp->Add(htemp1);
+    hstack_samp->Add(htemp2);
+    hstack_samp->Add(htemp3);
+    
+    hstack_samp->Draw("nostack");
+    hstack_samp->GetXaxis()->SetRangeUser(0,2.75e3);
+
+    hstack_samp->GetXaxis()->SetTitle("Max ADC sample, max strip in cluster");
+    legtemp = new TLegend(0.45, 0.4, 1.0-tmargin, 1.0-rmargin, "Clusters on tracks", "brNDC");
+    legtemp->SetFillStyle(0);
+    legtemp->SetBorderSize(0);
+    legtemp->SetTextFont(62);
+    legtemp->SetTextSize(0.05);
+    legtemp->SetMargin(0.25);
+    legtemp->AddEntry(htemp1, "X strips", "l");
+    legtemp->AddEntry(htemp2, "Y strips", "l");
+    legtemp->AddEntry(htemp3, "#sqrt{XY}", "l");
+
+    legtemp->Draw();
+    
+    c4->cd(10);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hADCsum_Xstrip_max_module->ProjectionX(hnametemp.Format("hstrxmax_mod%d",imodule),imodule+1,imodule+1);
+    htemp2 = hADCsum_Ystrip_max_module->ProjectionX(hnametemp.Format("hstrymax_mod%d",imodule),imodule+1,imodule+1);
+    htemp3 = hADCprodXYstrip_max_module->ProjectionX(hnametemp.Format("hstrxymax_mod%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+    htemp3->SetLineColor(kGreen+1);
+    
+    THStack *hstack_strip = new THStack("hstack_strip",modname);
+    hstack_strip->Add(htemp1);
+    hstack_strip->Add(htemp2);
+    hstack_strip->Add(htemp3);
+
+   
+    
+    hstack_strip->Draw("nostack");
+    hstack_strip->GetXaxis()->SetRangeUser(0.0,1.25e4);
+    hstack_strip->GetXaxis()->SetTitle("Strip sum, max strip on cluster");
+    
+    legtemp->Draw();
+    
+    c4->cd(11);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hADCsumXclust_module->ProjectionX(hnametemp.Format("hclx_mod%d",imodule),imodule+1,imodule+1);
+    htemp2 = hADCsumYclust_module->ProjectionX(hnametemp.Format("hcly_mod%d",imodule),imodule+1,imodule+1);
+    htemp3 = hADCprodXYclust_module->ProjectionX(hnametemp.Format("hclxy_mod%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetLineColor(2);
+    //   htemp1->SetLineStyle(1);
+    htemp2->SetLineColor(4);
+    //htemp2->SetLineStyle(10);
+    htemp3->SetLineColor(kGreen+1);
+    
+    THStack *hstack_clust = new THStack("hstack_clust",modname);
+    hstack_clust->Add(htemp1);
+    hstack_clust->Add(htemp2);
+    hstack_clust->Add(htemp3);
+
+   
+    hstack_clust->Draw("nostack");
+    hstack_clust->GetXaxis()->SetRangeUser(0,2.5e4);
+    hstack_clust->GetXaxis()->SetTitle("Cluster sum");
+    
+    legtemp->Draw();
+    
+    c4->cd(12)->SetLogy();
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hStrip_maxcor_module->ProjectionX(hnametemp.Format("hstrcorr%d",imodule),imodule+1,imodule+1);
+    htemp2 = hClust_corr_module->ProjectionX(hnametemp.Format("hclcorr%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetLineColor(2);
+    htemp2->SetLineColor(4);
+    
+    THStack *hstack_corr = new THStack("hstack_corr",modname);
+
+    hstack_corr->Add(htemp1);
+    hstack_corr->Add(htemp2);
+    
+    hstack_corr->Draw("nostack");
+
+    hstack_corr->GetXaxis()->SetTitle("Correlation Coefficient");
+    
+    legtemp = new TLegend(lmargin, 0.5, 0.75, 1-tmargin, "Hits on track", "brNDC");
+    legtemp->SetFillStyle(0);
+    legtemp->SetBorderSize(0);
+    legtemp->SetTextFont(62);
+    legtemp->SetTextSize(0.05);
+    legtemp->SetMargin(0.2);
+   
+    legtemp->AddEntry( htemp1, "Max X and Y strips", "l" );
+    legtemp->AddEntry( htemp2, "Cluster X and Y sums", "l" );
+
+    legtemp->Draw();
+
+    
+    c4->cd(13);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hTrackXresid_vs_module->ProjectionY(hnametemp.Format("hresidx%d",imodule),imodule+1,imodule+1);
+
+    htemp1->Draw();
+    htemp1->SetTitle(modname);
+    htemp1->GetXaxis()->SetRangeUser(-3.,3.);
+
+    int binmax = htemp1->GetMaximumBin();
+    int binlo = binmax, binhi = binmax;
+
+    while( binlo >= 1 && htemp1->GetBinContent(binlo-1)>=htemp1->GetBinContent(binmax)*0.5 ){binlo--;}
+    while( binhi <= htemp1->GetNbinsX() && htemp1->GetBinContent(binhi+1)>=htemp1->GetBinContent(binmax)*0.5 ){binhi++; }
+    
+    htemp1->Fit("gaus","","",htemp1->GetBinLowEdge(binlo),htemp1->GetBinLowEdge(binhi+1));
+    
+    c4->cd(15);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hTrackXeresid_vs_module->ProjectionY(hnametemp.Format("heresidx%d",imodule),imodule+1,imodule+1);
+
+    htemp1->Draw();
+    htemp1->SetTitle(modname);
+    htemp1->GetXaxis()->SetRangeUser(-3.,3.);
+    binmax = htemp1->GetMaximumBin();
+    binlo = binmax, binhi = binmax;
+
+    while( binlo >= 1 && htemp1->GetBinContent(binlo-1)>=htemp1->GetBinContent(binmax)*0.5 ){binlo--;}
+    while( binhi <= htemp1->GetNbinsX() && htemp1->GetBinContent(binhi+1)>=htemp1->GetBinContent(binmax)*0.5 ){binhi++; }
+    
+    htemp1->Fit("gaus","","",htemp1->GetBinLowEdge(binlo),htemp1->GetBinLowEdge(binhi+1));
+
+    c4->cd(14);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hTrackYresid_vs_module->ProjectionY(hnametemp.Format("hresidy%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetTitle(modname);
+    htemp1->Draw();
+    htemp1->GetXaxis()->SetRangeUser(-3.,3.);
+    binmax = htemp1->GetMaximumBin();
+    binlo = binmax, binhi = binmax;
+
+    while( binlo >= 1 && htemp1->GetBinContent(binlo-1)>=htemp1->GetBinContent(binmax)*0.5 ){binlo--;}
+    while( binhi <= htemp1->GetNbinsX() && htemp1->GetBinContent(binhi+1)>=htemp1->GetBinContent(binmax)*0.5 ){binhi++; }
+    
+    htemp1->Fit("gaus","","",htemp1->GetBinLowEdge(binlo),htemp1->GetBinLowEdge(binhi+1));
+
+    c4->cd(16);
+
+    gPad->SetLeftMargin(lmargin);
+    gPad->SetRightMargin(rmargin);
+    gPad->SetBottomMargin(bmargin);
+    gPad->SetTopMargin(tmargin);
+    
+    htemp1 = hTrackYeresid_vs_module->ProjectionY(hnametemp.Format("heresidy%d",imodule),imodule+1,imodule+1);
+
+    htemp1->SetTitle(modname);
+    htemp1->Draw();
+    htemp1->GetXaxis()->SetRangeUser(-3.,3.);
+    binmax = htemp1->GetMaximumBin();
+    binlo = binmax, binhi = binmax;
+
+    while( binlo >= 1 && htemp1->GetBinContent(binlo-1)>=htemp1->GetBinContent(binmax)*0.5 ){binlo--;}
+    while( binhi <= htemp1->GetNbinsX() && htemp1->GetBinContent(binhi+1)>=htemp1->GetBinContent(binmax)*0.5 ){binhi++; }
+    
+    htemp1->Fit("gaus","","",htemp1->GetBinLowEdge(binlo),htemp1->GetBinLowEdge(binhi+1));
+    
+    
+    gPad->Modified();
+    c4->Update();
+    c4->Print(pdffilename);
+  }
+  
   
   // heff_layer1->SetTitleSize(.06,"XYZ");
   // heff_layer1->SetLabelSize(.06,"XYZ");
