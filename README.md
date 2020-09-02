@@ -1,8 +1,15 @@
-# branch informations 
+# SBSGEM_standalone GEM Algorithm Alignment
+Standalone ROOT macros for analysis of GEM data.
 
-WorkBranch_PlotCheck 
-
-The track efficiency seems like pretty low. In this branch, add the event by event display functions used to check each indivadual event.
+##### Table of Contents  
+- [SBSGEM_standalone GEM Algorithm Alignment](#sbsgem_standalone-gem-algorithm-alignment)
+        - [Table of Contents](#table-of-contents)
+- [SBSGEM_standalone](#sbsgem_standalone)
+  - [Usage example:](#usage-example)
+  - [Issues and Solutions](#issues-and-solutions)
+  - [Config Instruction](#config-instruction)
+  - [branch instruction](#branch-instruction)
+  - [Dev Plan](#dev-plan)
 
 
 # SBSGEM_standalone
@@ -18,7 +25,7 @@ GEM_align.C: Alignment code; takes the output of GEM_reconstruct.C as input, det
 
 plot_GEM
 
-Usage example:
+## Usage example:
 
 ~~~~
 root [0] .L GEM_reconstruct.C+
@@ -153,7 +160,13 @@ endconfig
 
 ```
 
+## branch instruction 
+* PRex_Stable 
+  Work Branch for PRex GEM analysis 
 
+* WorkBranch_PlotCheck 
+
+The track efficiency seems like pretty low. In this branch, add the event by event display functions used to check each indivadual event.
 
 ## Dev Plan
 - [x] add the display code used for display the clusters for each GEMs
